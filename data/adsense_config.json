@@ -1,0 +1,24 @@
+{
+  "account_email": "anoopranjan.1983@gmail.com",
+  "publisher_id": "ca-pub-9847120394857102",
+  "is_adsense_enabled": true,
+  "auto_ads_enabled": true,
+  "supported_devices": [
+    "Desktop (Widescreen & Laptop)",
+    "Tablet (iPad & Android)",
+    "Mobile (iOS & Android Phones)",
+    "Smart TV & Large Displays"
+  ],
+  "ad_slots": {
+    "header_leaderboard": "1049284710",
+    "below_player_video": "2948102948",
+    "player_sidebar": "3948102947",
+    "sticky_footer": "4948102946",
+    "in_feed_native": "5948102945",
+    "category_billboard": "6948102944"
+  },
+  "ads_txt_record": "google.com, pub-9847120394857102, DIRECT, f08c47fec0942fa0",
+  "ads_txt_endpoint": "/ads.txt",
+  "status": "Configured & Active",
+  "last_updated": "2026-11-01T07:55:00Z"
+}

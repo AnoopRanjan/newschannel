@@ -16,24 +16,38 @@ HEALTH_LOGS_FILE = os.path.join(DATA_DIR, "health_logs.json")
 _lock = threading.Lock()
 
 def _load_json(file_path: str, default: Any) -> Any:
-    if not os.path.exists(file_path):
+    # Check if a modified version exists in /tmp (Vercel serverless environment)
+    tmp_file = os.path.join("/tmp/data", os.path.basename(file_path))
+    target = tmp_file if os.path.exists(tmp_file) else file_path
+
+    if not os.path.exists(target):
         _save_json(file_path, default)
         return default
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(target, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return default
 
 def _save_json(file_path: str, data: Any):
-    temp_file = file_path + ".tmp"
-    with open(temp_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    # Replace file atomically
-    if os.path.exists(file_path):
-        os.replace(temp_file, file_path)
-    else:
-        os.rename(temp_file, file_path)
+    try:
+        temp_file = file_path + ".tmp"
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        if os.path.exists(file_path):
+            os.replace(temp_file, file_path)
+        else:
+            os.rename(temp_file, file_path)
+    except (OSError, PermissionError) as e:
+        # In serverless environments like Vercel with read-only root, fallback to /tmp
+        try:
+            tmp_dir = "/tmp/data"
+            os.makedirs(tmp_dir, exist_ok=True)
+            tmp_file = os.path.join(tmp_dir, os.path.basename(file_path))
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
 
 class JsonDatabase:
     """Thread-safe JSON file database replacing relational database."""

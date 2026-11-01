@@ -1,5 +1,12 @@
 /**
- * BharatStream - Main Application Controller (JSON Storage & Multi-Earning Ad Engine)
+ * BharatStream - Cinema & OTT Movie Streaming Application Controller
+ * Features:
+ * - Netflix / CinePulse-style Hero Billboard with live stream preview
+ * - Horizontal carousel movie rows with smooth left/right arrow sliders
+ * - Top 10 Live News in India with giant outline rank numbers (1-10)
+ * - 12 Regional Language Cinema Hub Tiles with native Indic scripts
+ * - 16:9 widescreen backdrop cards with match scores, resolution badges & hover lift
+ * - Zero Database / Pure JSON File Storage & Multi-Earning Ad Monetization Engine
  */
 
 class BharatStreamApp {
@@ -14,6 +21,21 @@ class BharatStreamApp {
     this.selectedCategory = 'All';
     this.preferredLanguage = 'All';
     this.clientToken = this.getOrCreateClientToken();
+
+    this.regionalLanguages = [
+      { name: 'Hindi', script: 'हिंदी', gradient: 'linear-gradient(135deg, #b91c1c, #450a0a)', watermark: 'हिं' },
+      { name: 'Tamil', script: 'தமிழ்', gradient: 'linear-gradient(135deg, #c2410c, #431407)', watermark: 'த' },
+      { name: 'Telugu', script: 'తెలుగు', gradient: 'linear-gradient(135deg, #0284c7, #082f49)', watermark: 'తె' },
+      { name: 'Kannada', script: 'ಕನ್ನಡ', gradient: 'linear-gradient(135deg, #ca8a04, #713f12)', watermark: 'ಕ' },
+      { name: 'Malayalam', script: 'മലയാളം', gradient: 'linear-gradient(135deg, #059669, #064e3b)', watermark: 'മ' },
+      { name: 'Bengali', script: 'বাংলা', gradient: 'linear-gradient(135deg, #d97706, #78350f)', watermark: 'বা' },
+      { name: 'Marathi', script: 'मराठी', gradient: 'linear-gradient(135deg, #7c3aed, #2e1065)', watermark: 'म' },
+      { name: 'Gujarati', script: 'ગુજરાતી', gradient: 'linear-gradient(135deg, #db2777, #500724)', watermark: 'ગુ' },
+      { name: 'Punjabi', script: 'ਪੰਜਾਬੀ', gradient: 'linear-gradient(135deg, #2563eb, #172554)', watermark: 'ਪੰ' },
+      { name: 'Odia', script: 'ଓଡ଼ିଆ', gradient: 'linear-gradient(135deg, #0891b2, #164e63)', watermark: 'ଓ' },
+      { name: 'Assamese', script: 'অসমীয়া', gradient: 'linear-gradient(135deg, #4f46e5, #1e1b4b)', watermark: 'অ' },
+      { name: 'Urdu', script: 'اردو', gradient: 'linear-gradient(135deg, #15803d, #052e16)', watermark: 'اردو' }
+    ];
 
     this.init();
   }
@@ -30,7 +52,7 @@ class BharatStreamApp {
   async init() {
     this.loadSavedPreferences();
     this.bindDOMEvents();
-    
+
     await Promise.all([
       this.fetchChannels(),
       this.fetchCategories(),
@@ -184,7 +206,7 @@ class BharatStreamApp {
     if (topAdContainer) {
       if (topAd) {
         topAdContainer.innerHTML = `
-          <div class="ad-slot-label">${topAd.badge_text || 'SPONSORED PLACEMENT'} • VERIFIED ADVERTISER</div>
+          <div class="ad-slot-label">${topAd.badge_text || 'SPONSORED PREMIERE'} • VERIFIED BROADCAST SPONSOR</div>
           <a class="ad-banner-link" href="${topAd.target_url || '#'}" target="_blank" rel="noopener noreferrer" onclick="window.appState.trackAdEvent('home_top_banner', true)">
             <img class="ad-banner-img" src="${topAd.image_url}" alt="${topAd.headline || 'Sponsored'}">
           </a>
@@ -202,20 +224,20 @@ class BharatStreamApp {
     if (stickyContainer) {
       if (footerAd) {
         stickyContainer.innerHTML = `
-          <div style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); border-top: 1px solid #3b82f6; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 -4px 20px rgba(0,0,0,0.5);">
+          <div style="background: rgba(7, 10, 19, 0.95); backdrop-filter: blur(12px); border-top: 2px solid #e50914; padding: 10px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 -6px 25px rgba(0,0,0,0.7);">
             <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
-              <span class="live-badge" style="background: #1e3a8a; color: #93c5fd; border-color: #3b82f6; font-size: 0.65rem;">
-                ${footerAd.badge_text || 'PROMOTED'}
+              <span class="live-badge" style="background: rgba(229, 9, 20, 0.2); color: #fff; border-color: #e50914; font-size: 0.68rem;">
+                ${footerAd.badge_text || 'CINEMA PROMO'}
               </span>
-              <strong style="color: #fff; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              <strong style="color: #fff; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 ${footerAd.headline}
               </strong>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <a href="${footerAd.target_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 6px 14px; font-size: 0.8rem; background: #2563eb;" onclick="window.appState.trackAdEvent('sticky_footer_banner', true)">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <a href="${footerAd.target_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 7px 16px; font-size: 0.82rem;" onclick="window.appState.trackAdEvent('sticky_footer_banner', true)">
                 Claim Offer ↗
               </a>
-              <button onclick="document.getElementById('stickyFooterAd').style.display='none'" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; padding: 4px;">✕</button>
+              <button onclick="document.getElementById('stickyFooterAd').style.display='none'" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.2rem; padding: 4px;">✕</button>
             </div>
           </div>
         `;
@@ -234,7 +256,7 @@ class BharatStreamApp {
         belowContainer.innerHTML = `
           <div class="ad-slot-label">${belowAd.badge_text || 'SPONSORED BROADCAST SUPPORTER'}</div>
           <a href="${belowAd.target_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block;" onclick="window.appState.trackAdEvent('player_below_ad', true)">
-            <img src="${belowAd.image_url}" alt="Promoted" style="width: 100%; max-height: 80px; object-fit: cover; border-radius: 6px;">
+            <img src="${belowAd.image_url}" alt="Promoted" style="width: 100%; max-height: 85px; object-fit: cover; border-radius: 8px;">
           </a>
         `;
         belowContainer.style.display = 'block';
@@ -251,7 +273,7 @@ class BharatStreamApp {
         sidebarContainer.innerHTML = `
           <div class="ad-slot-label" style="margin-top: 10px;">${sidebarAd.badge_text || 'AFFILIATE RECOMMENDATION'}</div>
           <a href="${sidebarAd.target_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block;" onclick="window.appState.trackAdEvent('sidebar_ad', true)">
-            <img src="${sidebarAd.image_url}" alt="Sponsored" style="width: 100%; border-radius: 6px;">
+            <img src="${sidebarAd.image_url}" alt="Sponsored" style="width: 100%; border-radius: 8px;">
           </a>
         `;
         sidebarContainer.style.display = 'block';
@@ -283,6 +305,13 @@ class BharatStreamApp {
     if (searchInput) searchInput.value = '';
 
     this.renderActiveView();
+  }
+
+  scrollSlider(sliderId, direction) {
+    const track = document.getElementById(sliderId);
+    if (!track) return;
+    const scrollAmount = track.clientWidth * 0.75 * direction;
+    track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   }
 
   renderActiveView() {
@@ -318,158 +347,273 @@ class BharatStreamApp {
     }
   }
 
+  /* ================= HOME VIEW (CinePulse / Netflix OTT Movie Aesthetic) ================= */
   renderHomeView(container) {
-    const featured = this.allChannels.filter(c => c.is_featured);
-    const heroChannel = featured[0] || this.allChannels[0];
-    const popular = this.allChannels.filter(c => c.is_popular).slice(0, 6);
-    const indiaNational = this.allChannels.filter(c => c.country === 'India' && ['National', 'Business', 'Parliament'].includes(c.category)).slice(0, 6);
-    const international = this.allChannels.filter(c => c.category === 'International').slice(0, 6);
+    const featuredList = this.allChannels.filter(c => c.is_featured);
+    const heroChannel = featuredList[0] || this.allChannels[0];
 
-    let favsSection = '';
+    // Rows
+    const top10 = [...this.allChannels].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 10);
+    const nationalChannels = this.allChannels.filter(c => c.country === 'India' && ['National', 'Business', 'Parliament'].includes(c.category));
+    const internationalChannels = this.allChannels.filter(c => c.category === 'International');
+    const regionalSpotlight = this.allChannels.filter(c => c.language.toLowerCase() === this.selectedRegionalLanguage.toLowerCase());
     const favChannels = this.allChannels.filter(c => this.favourites.has(c.id));
+
+    // Watchlist Shelf (if any saved)
+    let watchlistShelf = '';
     if (favChannels.length > 0) {
-      favsSection = `
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">⭐ My Favourite Channels</h2>
-            <div class="section-subtitle">Your personalized instant-access news directory</div>
-          </div>
-        </div>
-        <div class="channel-grid">
-          ${favChannels.map(c => this.createChannelCardHTML(c)).join('')}
-        </div>
-      `;
+      watchlistShelf = this.createMovieShelfHTML({
+        title: '⭐ My Watchlist / Pinned Channels',
+        subtitle: 'Quick access to your personal live broadcasting stations',
+        sliderId: 'sliderWatchlist',
+        itemsHTML: favChannels.map(c => this.createCinemaCardHTML(c)).join(''),
+        exploreTab: 'favourites'
+      });
     }
 
+    // Top 10 Shelf (with giant stylized numbers)
+    const top10HTML = top10.map((c, idx) => `
+      <div class="top10-card-wrap" onclick="window.playerManager.playChannel(window.appState.getChannelById(${c.id}))">
+        <div class="top10-rank-num">${idx + 1}</div>
+        ${this.createCinemaCardHTML(c)}
+      </div>
+    `).join('');
+
     container.innerHTML = `
-      <!-- Featured Spotlight Hero -->
-      ${heroChannel ? `
-        <div class="hero-spotlight">
-          <div class="hero-video-box">
-            <iframe 
-              src="https://www.youtube-nocookie.com/embed/${heroChannel.video_id}?autoplay=0&rel=0&modestbranding=1" 
-              title="${heroChannel.channel_name}" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-              allowfullscreen
-              style="width: 100%; height: 100%; border: none;">
-            </iframe>
+      <!-- 1. Cinematic Hero Billboard -->
+      ${heroChannel ? this.renderHeroBillboard(heroChannel) : ''}
+
+      <!-- 2. Personal Watchlist Shelf (if any) -->
+      ${watchlistShelf}
+
+      <!-- 3. Top 10 Live News in India Today -->
+      <div class="movie-shelf">
+        <div class="shelf-header">
+          <h2 class="shelf-title">
+            <span class="shelf-accent">|</span> 🏆 Top 10 Live News in India Today
+          </h2>
+          <span class="shelf-explore" onclick="window.appState.switchTab('trending')">Explore All ›</span>
+        </div>
+        <div class="slider-wrapper">
+          <button class="slider-arrow prev" onclick="window.appState.scrollSlider('sliderTop10', -1)" aria-label="Previous">‹</button>
+          <div class="slider-track" id="sliderTop10">
+            ${top10HTML}
           </div>
-          <div class="hero-info-box">
-            <div class="hero-tag">★ FEATURED LIVE BROADCASTER</div>
-            <h1 class="hero-title">${heroChannel.channel_name}</h1>
-            <p class="hero-desc">${heroChannel.description || 'Watch live verified broadcasting and breaking developments.'}</p>
-            <div class="meta-badges">
-              <span class="meta-pill lang">${heroChannel.language}</span>
-              <span class="meta-pill country">${heroChannel.country}</span>
-              <span class="meta-pill">${heroChannel.category}</span>
-            </div>
-            <div style="display: flex; gap: 12px; margin-top: 8px;">
-              <button class="btn-primary" onclick="window.playerManager.playChannel(window.appState.getChannelById(${heroChannel.id}))">
-                ▶ Watch Live Stream
-              </button>
-              <button class="btn-outline" onclick="window.appState.toggleFavourite(${heroChannel.id})">
-                ${this.isFavourite(heroChannel.id) ? '❤️ In Favourites' : '🤍 Add to Favourites'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ` : ''}
-
-      ${favsSection}
-
-      <!-- Most Watched Live Channels -->
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">🔥 Most Watched Live Streams</h2>
-          <div class="section-subtitle">Trending broadcasts across India and the globe</div>
-        </div>
-        <button class="btn-outline" onclick="window.appState.switchTab('trending')">View All Trending →</button>
-      </div>
-      <div class="channel-grid">
-        ${this.renderGridWithNativeAd(popular)}
-      </div>
-
-      <!-- Popular Indian News Channels -->
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">🇮🇳 Popular Indian National Channels</h2>
-          <div class="section-subtitle">Official public & private national broadcasters</div>
-        </div>
-        <button class="btn-outline" onclick="window.appState.switchTab('india')">View All India →</button>
-      </div>
-      <div class="channel-grid">
-        ${indiaNational.map(c => this.createChannelCardHTML(c)).join('')}
-      </div>
-
-      <!-- Regional Language Quick Highlights -->
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">🗺️ Regional News Directory</h2>
-          <div class="section-subtitle">Watch grassroots journalism in 12 Indian languages</div>
-        </div>
-        <button class="btn-outline" onclick="window.appState.switchTab('regional')">Browse Languages →</button>
-      </div>
-      <div class="language-pills-wrap">
-        ${['Hindi', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Odia', 'Assamese', 'Urdu'].map(lang => `
-          <button class="pill-btn ${this.selectedRegionalLanguage === lang ? 'active' : ''}" onclick="window.appState.openRegionalLanguage('${lang}')">
-            ${lang}
-          </button>
-        `).join('')}
-      </div>
-
-      <!-- International Live News -->
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">🌐 International Live News (English)</h2>
-          <div class="section-subtitle">Authorized English-language global broadcasters</div>
-        </div>
-        <button class="btn-outline" onclick="window.appState.switchTab('international')">View All International →</button>
-      </div>
-      <div class="channel-grid">
-        ${international.map(c => this.createChannelCardHTML(c)).join('')}
-      </div>
-
-      <!-- Breaking News Headlines Feed -->
-      <div class="section-header" style="margin-top: 36px;">
-        <div>
-          <h2 class="section-title">📰 Breaking News & Headlines</h2>
-          <div class="section-subtitle">Aggregated from verified news agency RSS feeds with direct source attribution</div>
+          <button class="slider-arrow next" onclick="window.appState.scrollSlider('sliderTop10', 1)" aria-label="Next">›</button>
         </div>
       </div>
-      <div class="headlines-grid">
-        ${this.headlines.slice(0, 6).map(h => this.createHeadlineCardHTML(h)).join('')}
+
+      <!-- 4. Prime Indian National News Broadcasters Slider -->
+      ${this.createMovieShelfHTML({
+        title: '🔴 Popular Indian National Broadcasters',
+        subtitle: 'Official public service and private national satellite news networks',
+        sliderId: 'sliderNational',
+        itemsHTML: this.renderSliderWithSponsoredAd(nationalChannels, 'sliderNational'),
+        exploreTab: 'india'
+      })}
+
+      <!-- 5. 12 Regional Language Cinema Hub Tiles -->
+      <div class="movie-shelf" style="margin-top: 10px;">
+        <div class="shelf-header">
+          <h2 class="shelf-title">
+            <span class="shelf-accent">|</span> 🗺️ 12 Regional Language Hubs
+          </h2>
+          <span class="shelf-explore" onclick="window.appState.switchTab('regional')">Browse All Languages ›</span>
+        </div>
+        <div class="genre-hub-grid">
+          ${this.regionalLanguages.map(l => {
+            const count = this.allChannels.filter(c => c.language.toLowerCase() === l.name.toLowerCase()).length;
+            const isSelected = this.selectedRegionalLanguage.toLowerCase() === l.name.toLowerCase();
+            return `
+              <div class="genre-card ${isSelected ? 'active' : ''}" style="background: ${l.gradient};" onclick="window.appState.selectRegionalLanguage('${l.name}')">
+                <div class="genre-watermark">${l.watermark}</div>
+                <div>
+                  <div class="genre-name">${l.name}</div>
+                  <div class="genre-script">${l.script}</div>
+                </div>
+                <div class="genre-badge">${count} Live Channels</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- 6. Active Regional Language Spotlight Carousel -->
+      ${this.createMovieShelfHTML({
+        title: `🎭 ${this.selectedRegionalLanguage} Regional News Spotlight`,
+        subtitle: `Verified live news channels broadcasting in ${this.selectedRegionalLanguage}`,
+        sliderId: 'sliderRegionalActive',
+        itemsHTML: regionalSpotlight.length > 0 
+          ? regionalSpotlight.map(c => this.createCinemaCardHTML(c)).join('')
+          : '<div style="padding: 20px; color: var(--text-muted);">No channels found for this language.</div>',
+        exploreTab: 'regional'
+      })}
+
+      <!-- 7. Global International News (English) Slider -->
+      ${this.createMovieShelfHTML({
+        title: '🌐 Global Live News (International English)',
+        subtitle: 'Leading international public & private English broadcasters broadcasting worldwide',
+        sliderId: 'sliderInternational',
+        itemsHTML: internationalChannels.map(c => this.createCinemaCardHTML(c)).join(''),
+        exploreTab: 'international'
+      })}
+
+      <!-- 8. Real-time Wire Headlines Reel -->
+      <div class="movie-shelf" style="margin-top: 16px;">
+        <div class="shelf-header">
+          <h2 class="shelf-title">
+            <span class="shelf-accent">|</span> ⚡ Breaking Wire Dispatches & Global Press
+          </h2>
+        </div>
+        <div class="headlines-grid">
+          ${this.headlines.slice(0, 6).map(h => this.createHeadlineCardHTML(h)).join('')}
+        </div>
       </div>
     `;
   }
 
-  renderGridWithNativeAd(channelList) {
+  /* ================= HERO BILLBOARD BUILDER ================= */
+  renderHeroBillboard(channel) {
+    const isFav = this.isFavourite(channel.id);
+    const bgUrl = channel.backdrop_url || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1600&auto=format&fit=crop';
+    const logoUrl = channel.logo_url || '/static/img/default-tv.svg';
+
+    return `
+      <div class="hero-billboard" style="background-image: url('${bgUrl}');">
+        <div class="hero-vignette-bottom"></div>
+        <div class="hero-vignette-left"></div>
+
+        <div class="hero-billboard-content">
+          <div class="hero-broadcast-badge">
+            <span class="live-dot"></span>
+            <span style="font-weight: 800; font-size: 0.72rem; color: #fff; letter-spacing: 0.6px;">LIVE NOW</span>
+            <span style="color: rgba(255,255,255,0.3);">|</span>
+            <span class="hero-top-rank-pill">★ #1 IN INDIA TODAY</span>
+          </div>
+
+          <div class="hero-title-wrap">
+            <img class="hero-channel-logo" src="${logoUrl}" alt="${channel.channel_name} Logo" onerror="this.style.display='none'">
+            <h1 class="hero-channel-name">${channel.channel_name}</h1>
+          </div>
+
+          <div class="hero-meta-row">
+            <span class="match-score-badge">${channel.match_score || '99% Match'}</span>
+            <span class="quality-badge">${channel.quality || '1080p Full HD'}</span>
+            <span class="quality-badge">${channel.native_language || channel.language}</span>
+            <span class="quality-badge">${channel.category}</span>
+            <span class="quality-badge">${channel.country}</span>
+          </div>
+
+          <p class="hero-desc">
+            ${channel.description || 'Watch 24/7 continuous official live television broadcasting, breaking news developments, prime-time analysis, and special reports.'}
+          </p>
+
+          <div class="hero-cta-group">
+            <button class="btn-hero-play" onclick="window.playerManager.playChannel(window.appState.getChannelById(${channel.id}))">
+              <span style="font-size: 1.15rem;">▶</span> Watch Live Stream
+            </button>
+            <button class="btn-hero-watchlist" onclick="window.appState.toggleFavourite(${channel.id})">
+              <span>${isFav ? '❤️' : '➕'}</span> ${isFav ? 'In Watchlist' : 'Add to Watchlist'}
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-cert-badge">
+          U/A 13+ • OFFICIAL BROADCAST
+        </div>
+      </div>
+    `;
+  }
+
+  /* ================= MOVIE SHELF SLIDER BUILDER ================= */
+  createMovieShelfHTML({ title, subtitle, itemsHTML, sliderId, exploreTab }) {
+    return `
+      <div class="movie-shelf">
+        <div class="shelf-header">
+          <div>
+            <h2 class="shelf-title">
+              <span class="shelf-accent">|</span> ${title}
+            </h2>
+            ${subtitle ? `<div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 3px;">${subtitle}</div>` : ''}
+          </div>
+          ${exploreTab ? `<span class="shelf-explore" onclick="window.appState.switchTab('${exploreTab}')">Explore All ›</span>` : ''}
+        </div>
+        <div class="slider-wrapper">
+          <button class="slider-arrow prev" onclick="window.appState.scrollSlider('${sliderId}', -1)" aria-label="Previous">‹</button>
+          <div class="slider-track" id="${sliderId}">
+            ${itemsHTML}
+          </div>
+          <button class="slider-arrow next" onclick="window.appState.scrollSlider('${sliderId}', 1)" aria-label="Next">›</button>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ================= CINEMA POSTER CARD (16:9 Aspect Ratio) ================= */
+  createCinemaCardHTML(channel) {
+    const isFav = this.isFavourite(channel.id);
+    const bgUrl = channel.backdrop_url || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=600&auto=format&fit=crop';
+    const logoUrl = channel.logo_url || '/static/img/default-tv.svg';
+
+    return `
+      <div class="cinema-card" style="background-image: url('${bgUrl}');" onclick="window.playerManager.playChannel(window.appState.getChannelById(${channel.id}))">
+        <div class="card-scrim-overlay"></div>
+
+        <div class="card-top-badges">
+          <div class="card-logo-badge">
+            <img src="${logoUrl}" alt="${channel.channel_name}" onerror="this.src='/static/img/default-tv.svg'" loading="lazy">
+          </div>
+          <span class="live-badge">
+            <span class="live-dot"></span> LIVE
+          </span>
+        </div>
+
+        <div class="card-bottom-content">
+          <div class="card-channel-name" title="${channel.channel_name}">${channel.channel_name}</div>
+          <div class="card-quick-actions">
+            <div class="card-meta-indicators">
+              <span class="card-match-score">${channel.match_score || '98% Match'}</span>
+              <span class="card-lang-pill">${channel.native_language || channel.language}</span>
+            </div>
+            <div class="card-action-btns">
+              <button class="btn-card-fav ${isFav ? 'active' : ''}" title="${isFav ? 'Remove from Watchlist' : 'Add to Watchlist'}" onclick="event.stopPropagation(); window.appState.toggleFavourite(${channel.id});">
+                ${isFav ? '❤️' : '➕'}
+              </button>
+              <button class="btn-card-play" title="Play Live Stream">
+                ▶
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ================= SPONSORED IN-FEED CARD SLIDER INJECTION ================= */
+  renderSliderWithSponsoredAd(channelList, sliderId) {
     let html = '';
     const sponsoredAd = this.ads.find(a => a.slot_name === 'sponsored_channel_card' && a.is_enabled);
 
     channelList.forEach((c, idx) => {
-      html += this.createChannelCardHTML(c);
-      // Inject native sponsored card after 3rd item
+      html += this.createCinemaCardHTML(c);
+
+      // Inject native sponsored cinema card after 3rd item
       if (idx === 2 && sponsoredAd) {
         html += `
-          <div class="channel-card" style="border: 1px solid #3b82f6; background: rgba(30, 58, 138, 0.2);" onclick="window.appState.trackAdEvent('sponsored_channel_card', true); window.open('${sponsoredAd.target_url}', '_blank');">
-            <div class="card-top">
-              <span class="live-badge" style="background: #1e3a8a; color: #93c5fd; border-color: #3b82f6;">
+          <div class="cinema-card" style="border: 1px solid #e50914; background: linear-gradient(135deg, rgba(229, 9, 20, 0.15), rgba(7, 10, 19, 0.95));" onclick="window.appState.trackAdEvent('sponsored_channel_card', true); window.open('${sponsoredAd.target_url}', '_blank');">
+            <div class="card-scrim-overlay"></div>
+            <div class="card-top-badges">
+              <span class="live-badge" style="background: rgba(229, 9, 20, 0.25); color: #fff; border-color: #e50914;">
                 ★ SPONSORED
               </span>
-              <span style="font-size: 0.75rem; color: #93c5fd;">Ad</span>
+              <span style="font-size: 0.72rem; color: #f87171; font-weight: 700;">Promoted</span>
             </div>
-            <div class="logo-frame">
-              <img class="channel-logo-img" src="${sponsoredAd.image_url}" alt="Promoted">
-            </div>
-            <div class="card-body">
-              <div class="channel-name" style="color: #60a5fa;">${sponsoredAd.headline}</div>
-              <div class="meta-badges">
-                <span class="meta-pill" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd;">Promoted Deal</span>
+            <div class="card-bottom-content">
+              <div class="card-channel-name" style="color: #fca5a5;">${sponsoredAd.headline}</div>
+              <div class="card-quick-actions">
+                <span class="card-match-score" style="color: #fbbf24;">Special Offer ↗</span>
+                <button class="btn-card-play" style="background: #e50914;">↗</button>
               </div>
-            </div>
-            <div class="card-footer">
-              <span class="status-indicator" style="color: #60a5fa;">Visit Partner ↗</span>
-              <button class="btn-play-mini" style="background: #2563eb;">↗</button>
             </div>
           </div>
         `;
@@ -479,107 +623,137 @@ class BharatStreamApp {
     return html;
   }
 
+  /* ================= INDIA NATIONAL VIEW ================= */
   renderIndiaView(container) {
     const channels = this.allChannels.filter(c => c.country === 'India' && ['National', 'Business', 'Parliament'].includes(c.category));
+
     container.innerHTML = `
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 24px;">
         <div>
-          <h2 class="section-title">🇮🇳 India Live News Directory</h2>
-          <div class="section-subtitle">Free, officially available live Indian national news streams (${channels.length} channels)</div>
+          <h1 class="shelf-title" style="font-size: 1.6rem;">
+            <span class="shelf-accent">|</span> 🇮🇳 India Live News Directory
+          </h1>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+            Official public service and national broadcasters (${channels.length} channels verified)
+          </div>
         </div>
       </div>
+
       <div class="channel-grid">
-        ${this.renderGridWithNativeAd(channels)}
+        ${channels.map(c => this.createCinemaCardHTML(c)).join('')}
       </div>
     `;
   }
 
+  /* ================= REGIONAL 12 LANGUAGES VIEW ================= */
   renderRegionalView(container) {
-    const languages = [
-      { name: 'Hindi', script: 'हिंदी' },
-      { name: 'Tamil', script: 'தமிழ்' },
-      { name: 'Telugu', script: 'తెలుగు' },
-      { name: 'Kannada', script: 'ಕನ್ನಡ' },
-      { name: 'Malayalam', script: 'മലയാളം' },
-      { name: 'Bengali', script: 'বাংলা' },
-      { name: 'Marathi', script: 'मराठी' },
-      { name: 'Gujarati', script: 'ગુજરાતી' },
-      { name: 'Punjabi', script: 'ਪੰਜਾਬੀ' },
-      { name: 'Odia', script: 'ଓଡ଼ିଆ' },
-      { name: 'Assamese', script: 'অসমীয়া' },
-      { name: 'Urdu', script: 'اردو' }
-    ];
-
     const currentLang = this.selectedRegionalLanguage || 'Hindi';
     const channels = this.allChannels.filter(c => c.language.toLowerCase() === currentLang.toLowerCase());
 
     container.innerHTML = `
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 20px;">
         <div>
-          <h2 class="section-title">🗺️ Regional News - 12 Indian Languages</h2>
-          <div class="section-subtitle">Select an Indian language to access verified regional news broadcasts</div>
+          <h1 class="shelf-title" style="font-size: 1.6rem;">
+            <span class="shelf-accent">|</span> 🗺️ Regional News - 12 Indian Languages
+          </h1>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+            Select an Indian language hub to access authentic regional state broadcasts
+          </div>
         </div>
       </div>
 
-      <div class="language-pills-wrap" style="margin-bottom: 24px;">
-        ${languages.map(l => `
-          <button class="pill-btn ${l.name === currentLang ? 'active' : ''}" onclick="window.appState.openRegionalLanguage('${l.name}')">
-            ${l.name} (${l.script})
-          </button>
-        `).join('')}
+      <!-- 12 Language Hub Genre Tiles -->
+      <div class="genre-hub-grid" style="margin-bottom: 30px;">
+        ${this.regionalLanguages.map(l => {
+          const count = this.allChannels.filter(c => c.language.toLowerCase() === l.name.toLowerCase()).length;
+          const isSelected = currentLang.toLowerCase() === l.name.toLowerCase();
+          return `
+            <div class="genre-card ${isSelected ? 'active' : ''}" style="background: ${l.gradient};" onclick="window.appState.selectRegionalLanguage('${l.name}')">
+              <div class="genre-watermark">${l.watermark}</div>
+              <div>
+                <div class="genre-name">${l.name}</div>
+                <div class="genre-script">${l.script}</div>
+              </div>
+              <div class="genre-badge">${count} Live Streams</div>
+            </div>
+          `;
+        }).join('')}
       </div>
 
-      <div style="margin-bottom: 16px; color: var(--text-muted); font-size: 0.9rem;">
-        Showing <strong>${channels.length}</strong> official news stream(s) in <strong>${currentLang}</strong>:
+      <div class="shelf-header" style="margin-bottom: 18px;">
+        <h2 class="shelf-title">
+          <span class="shelf-accent">|</span> Official ${currentLang} Live Streams (${channels.length})
+        </h2>
       </div>
 
       <div class="channel-grid">
         ${channels.length > 0 
-          ? this.renderGridWithNativeAd(channels)
+          ? channels.map(c => this.createCinemaCardHTML(c)).join('')
           : '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted);">No channels listed for this language yet.</div>'
         }
       </div>
     `;
   }
 
-  openRegionalLanguage(lang) {
+  selectRegionalLanguage(lang) {
     this.selectedRegionalLanguage = lang;
-    this.renderRegionalView(document.getElementById('mainContentView'));
+    if (this.activeTab === 'regional') {
+      this.renderRegionalView(document.getElementById('mainContentView'));
+    } else {
+      this.renderHomeView(document.getElementById('mainContentView'));
+      const activeShelf = document.getElementById('sliderRegionalActive');
+      if (activeShelf) {
+        activeShelf.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   }
 
+  /* ================= INTERNATIONAL ENGLISH VIEW ================= */
   renderInternationalView(container) {
     const channels = this.allChannels.filter(c => c.category === 'International');
+
     container.innerHTML = `
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 24px;">
         <div>
-          <h2 class="section-title">🌐 International News - English</h2>
-          <div class="section-subtitle">Verified global broadcasters broadcasting worldwide in English (${channels.length} channels)</div>
+          <h1 class="shelf-title" style="font-size: 1.6rem;">
+            <span class="shelf-accent">|</span> 🌐 International News (English Broadcasters)
+          </h1>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+            Authorized global English news networks broadcasting worldwide (${channels.length} channels)
+          </div>
         </div>
       </div>
+
       <div class="channel-grid">
-        ${this.renderGridWithNativeAd(channels)}
+        ${channels.map(c => this.createCinemaCardHTML(c)).join('')}
       </div>
     `;
   }
 
+  /* ================= TRENDING VIEW ================= */
   renderTrendingView(container) {
     const sorted = [...this.allChannels].sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+
     container.innerHTML = `
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 24px;">
         <div>
-          <h2 class="section-title">🔥 Trending News & Broadcasters</h2>
-          <div class="section-subtitle">Highest engagement live streams and top headlines right now</div>
+          <h1 class="shelf-title" style="font-size: 1.6rem;">
+            <span class="shelf-accent">|</span> 🔥 Trending Live Streams Across India & World
+          </h1>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+            Ranked by live viewer engagement and real-time broadcast popularity
+          </div>
         </div>
-      </div>
-      <div class="channel-grid">
-        ${this.renderGridWithNativeAd(sorted.slice(0, 12))}
       </div>
 
-      <div class="section-header" style="margin-top: 36px;">
-        <div>
-          <h2 class="section-title">⚡ Real-time News Feeds</h2>
-          <div class="section-subtitle">Latest breaking wire dispatches</div>
-        </div>
+      <div class="channel-grid">
+        ${sorted.map(c => this.createCinemaCardHTML(c)).join('')}
+      </div>
+
+      <div class="section-header" style="margin-top: 40px; margin-bottom: 20px;">
+        <h2 class="shelf-title">
+          <span class="shelf-accent">|</span> ⚡ Real-Time Wire Feed
+        </h2>
       </div>
       <div class="headlines-grid">
         ${this.headlines.map(h => this.createHeadlineCardHTML(h)).join('')}
@@ -587,20 +761,25 @@ class BharatStreamApp {
     `;
   }
 
+  /* ================= CATEGORIES VIEW ================= */
   renderCategoriesView(container) {
     const categories = ['National', 'Regional', 'International', 'Business', 'Parliament', 'Tech & Science'];
     const currentCat = this.selectedCategory || 'National';
     const filtered = this.allChannels.filter(c => c.category.toLowerCase() === currentCat.toLowerCase());
 
     container.innerHTML = `
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 20px;">
         <div>
-          <h2 class="section-title">📑 News Categories</h2>
-          <div class="section-subtitle">Browse channels by specialized news domain</div>
+          <h1 class="shelf-title" style="font-size: 1.6rem;">
+            <span class="shelf-accent">|</span> 📑 News Categories
+          </h1>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+            Browse channels filtered by news specialization
+          </div>
         </div>
       </div>
 
-      <div class="language-pills-wrap" style="margin-bottom: 24px;">
+      <div class="language-pills-wrap" style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto;">
         ${categories.map(cat => `
           <button class="pill-btn ${cat.toLowerCase() === currentCat.toLowerCase() ? 'active' : ''}" onclick="window.appState.selectCategory('${cat}')">
             ${cat}
@@ -609,7 +788,7 @@ class BharatStreamApp {
       </div>
 
       <div class="channel-grid">
-        ${this.renderGridWithNativeAd(filtered)}
+        ${filtered.map(c => this.createCinemaCardHTML(c)).join('')}
       </div>
     `;
   }
@@ -619,68 +798,71 @@ class BharatStreamApp {
     this.renderCategoriesView(document.getElementById('mainContentView'));
   }
 
+  /* ================= FAVOURITES / WATCHLIST VIEW ================= */
   renderFavouritesView(container) {
     const favChannels = this.allChannels.filter(c => this.favourites.has(c.id));
+
     container.innerHTML = `
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 24px;">
         <div>
-          <h2 class="section-title">⭐ My Favourite Channels</h2>
-          <div class="section-subtitle">Quick access to your preferred broadcasters (${favChannels.length} channels)</div>
+          <h1 class="shelf-title" style="font-size: 1.6rem;">
+            <span class="shelf-accent">|</span> ⭐ My Watchlist / Pinned Channels
+          </h1>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 4px;">
+            Your personal instant-access live broadcast lineup (${favChannels.length} channels saved)
+          </div>
         </div>
       </div>
 
       ${favChannels.length > 0 ? `
         <div class="channel-grid">
-          ${favChannels.map(c => this.createChannelCardHTML(c)).join('')}
+          ${favChannels.map(c => this.createCinemaCardHTML(c)).join('')}
         </div>
       ` : `
-        <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 50px 20px; text-align: center;">
-          <div style="font-size: 3rem; margin-bottom: 12px;">🤍</div>
-          <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 6px;">No favourite channels saved yet</h3>
-          <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 450px; margin: 0 auto 18px;">
-            Click the heart icon on any channel card to pin your favourite channels here for instant playback anytime.
+        <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-lg); padding: 60px 24px; text-align: center; max-width: 650px; margin: 40px auto;">
+          <div style="font-size: 3.5rem; margin-bottom: 16px;">🤍</div>
+          <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">Your Watchlist is Empty</h2>
+          <p style="color: var(--text-muted); font-size: 0.94rem; line-height: 1.5; margin-bottom: 22px;">
+            Click the heart or plus icon on any news channel card or player dialog to pin your favourite channels here for instant 1-click live playback.
           </p>
-          <button class="btn-primary" onclick="window.appState.switchTab('home')">Browse News Channels</button>
+          <button class="btn-primary" onclick="window.appState.switchTab('home')">Browse Live News Channels</button>
         </div>
       `}
     `;
   }
 
-  createChannelCardHTML(channel) {
-    const isFav = this.isFavourite(channel.id);
-    const logoUrl = channel.logo_url || '/static/img/default-tv.svg';
+  /* ================= SEARCH FILTERING ================= */
+  filterChannelsBySearch(query) {
+    if (!query) {
+      this.renderActiveView();
+      return;
+    }
 
-    return `
-      <div class="channel-card" onclick="window.playerManager.playChannel(window.appState.getChannelById(${channel.id}))">
-        <div class="card-top">
-          <span class="live-badge">
-            <span class="live-dot"></span>
-            LIVE
-          </span>
-          <button class="fav-btn ${isFav ? 'active' : ''}" title="${isFav ? 'Remove Favourite' : 'Add Favourite'}" 
-                  onclick="event.stopPropagation(); window.appState.toggleFavourite(${channel.id});">
-            ${isFav ? '❤️' : '🤍'}
-          </button>
-        </div>
+    const filtered = this.allChannels.filter(c => 
+      c.channel_name.toLowerCase().includes(query) ||
+      c.language.toLowerCase().includes(query) ||
+      (c.native_language && c.native_language.toLowerCase().includes(query)) ||
+      c.country.toLowerCase().includes(query) ||
+      c.category.toLowerCase().includes(query) ||
+      (c.tags && c.tags.some(t => t.toLowerCase().includes(query)))
+    );
 
-        <div class="logo-frame">
-          <img class="channel-logo-img" src="${logoUrl}" onerror="this.src='/static/img/default-tv.svg'" alt="${channel.channel_name} Logo" loading="lazy">
-        </div>
+    const container = document.getElementById('mainContentView');
+    if (!container) return;
 
-        <div class="card-body">
-          <div class="channel-name" title="${channel.channel_name}">${channel.channel_name}</div>
-          <div class="meta-badges">
-            <span class="meta-pill lang">${channel.language}</span>
-            <span class="meta-pill country">${channel.country}</span>
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <span class="status-indicator" title="Stream verified officially">
-            ● Available
-          </span>
-          <button class="btn-play-mini" title="Play Live Stream">▶</button>
-        </div>
+    container.innerHTML = `
+      <div class="section-header" style="margin-bottom: 20px;">
+        <h2 class="shelf-title">
+          <span class="shelf-accent">|</span> Search Results for "${query}" (${filtered.length} channels)
+        </h2>
+      </div>
+      <div class="channel-grid">
+        ${filtered.length > 0 
+          ? filtered.map(c => this.createCinemaCardHTML(c)).join('')
+          : `<div style="grid-column: 1/-1; padding: 50px; text-align: center; color: var(--text-muted);">
+               No live channels match "${query}". Try searching for channel names like "DD News", "Aaj Tak", or languages like "Tamil" or "English".
+             </div>`
+        }
       </div>
     `;
   }
@@ -701,78 +883,53 @@ class BharatStreamApp {
     `;
   }
 
-  filterChannelsBySearch(query) {
-    const mainView = document.getElementById('mainContentView');
-    if (!mainView) return;
-
-    if (!query) {
-      this.renderActiveView();
-      return;
-    }
-
-    const matches = this.allChannels.filter(c => 
-      c.channel_name.toLowerCase().includes(query) ||
-      c.language.toLowerCase().includes(query) ||
-      c.category.toLowerCase().includes(query) ||
-      c.country.toLowerCase().includes(query)
-    );
-
-    mainView.innerHTML = `
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">🔍 Search Results for "${query}"</h2>
-          <div class="section-subtitle">Found ${matches.length} matching channel(s)</div>
-        </div>
-      </div>
-      <div class="channel-grid">
-        ${matches.length > 0 
-          ? this.renderGridWithNativeAd(matches)
-          : '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted);">No channels matched your search query. Try another keyword.</div>'
-        }
-      </div>
-    `;
+  getChannelById(id) {
+    return this.allChannels.find(c => c.id === parseInt(id));
   }
 
-  toggleFavourite(channelId) {
-    const isFav = this.favourites.has(channelId);
-    if (isFav) {
-      this.favourites.delete(channelId);
+  isFavourite(channelId) {
+    return this.favourites.has(parseInt(channelId));
+  }
+
+  async toggleFavourite(channelId) {
+    const id = parseInt(channelId);
+    const wasFav = this.favourites.has(id);
+
+    if (wasFav) {
+      this.favourites.delete(id);
     } else {
-      this.favourites.add(channelId);
+      this.favourites.add(id);
     }
 
     localStorage.setItem('bharatstream_fav_ids', JSON.stringify([...this.favourites]));
 
-    fetch('/api/user/favourites/toggle', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        channel_id: channelId,
-        client_token: this.clientToken
-      })
-    }).catch(e => console.error('Sync favourite error:', e));
+    try {
+      await fetch('/api/user/favourites/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel_id: id, client_token: this.clientToken })
+      });
+    } catch (e) {}
 
-    this.renderActiveView();
-    if (window.playerManager) {
-      window.playerManager.updateFavButtonState();
+    // Re-render active view if on favourites tab or update UI
+    if (this.activeTab === 'favourites') {
+      this.renderActiveView();
+    } else {
+      // Update heart buttons across DOM
+      document.querySelectorAll(`.btn-card-fav[onclick*="${id}"]`).forEach(btn => {
+        btn.classList.toggle('active', !wasFav);
+        btn.innerHTML = !wasFav ? '❤️' : '➕';
+      });
     }
   }
 
-  isFavourite(channelId) {
-    return this.favourites.has(channelId);
-  }
-
-  getChannelById(channelId) {
-    return this.allChannels.find(c => c.id === channelId);
-  }
-
   checkDeepLinkParams() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const channelSlug = urlParams.get('channel');
+    const params = new URLSearchParams(window.location.search);
+    const channelSlug = params.get('channel');
     if (channelSlug) {
       const target = this.allChannels.find(c => c.slug === channelSlug);
       if (target && window.playerManager) {
-        setTimeout(() => window.playerManager.playChannel(target), 300);
+        window.playerManager.playChannel(target);
       }
     }
   }
@@ -781,30 +938,34 @@ class BharatStreamApp {
     try {
       const saved = localStorage.getItem('bharatstream_last_watched');
       if (saved) {
-        const ch = JSON.parse(saved);
-        const resumeBox = document.getElementById('resumeWatchingBar');
-        if (resumeBox) {
-          resumeBox.innerHTML = `
-            <div style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); padding: 10px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+        const lastChannel = JSON.parse(saved);
+        const bar = document.getElementById('resumeWatchingBar');
+        if (bar && lastChannel && lastChannel.id) {
+          bar.innerHTML = `
+            <div style="background: rgba(18, 24, 39, 0.95); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 20px;">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.2rem;">📺</span>
-                <div>
-                  <span style="font-size: 0.82rem; color: var(--text-muted);">Continue watching where you left off:</span>
-                  <strong style="color: #fff; margin-left: 6px;">${ch.channel_name} (${ch.language})</strong>
-                </div>
+                <span class="live-dot"></span>
+                <span style="font-size: 0.88rem; color: #e2e8f0;">
+                  Continue watching <strong>${lastChannel.channel_name}</strong>?
+                </span>
               </div>
-              <button class="btn-primary" style="padding: 4px 12px; font-size: 0.8rem;" onclick="window.playerManager.playChannel(window.appState.getChannelById(${ch.id}))">
-                Resume Stream ▶
-              </button>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn-primary" style="padding: 5px 14px; font-size: 0.8rem;" onclick="window.playerManager.playChannel(window.appState.getChannelById(${lastChannel.id})); document.getElementById('resumeWatchingBar').style.display='none';">
+                  Resume ▶
+                </button>
+                <button onclick="document.getElementById('resumeWatchingBar').style.display='none'" style="background: transparent; border: none; color: #94a3b8; cursor: pointer;">✕</button>
+              </div>
             </div>
           `;
-          resumeBox.style.display = 'block';
+          bar.style.display = 'block';
         }
       }
     } catch (e) {}
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+// Global initialization
+document.addEventListener('DOMContentLoaded', () => {
   window.appState = new BharatStreamApp();
+  window.playerManager = new StreamPlayerManager();
 });

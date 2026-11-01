@@ -115,6 +115,15 @@ def run_integration_tests():
         assert "estimated_earnings_inr" in stats
         print(f"✓ Earning Stats: Est. Revenue: ${stats['estimated_earnings_usd']} (₹{stats['estimated_earnings_inr']})")
 
+        # 9b. Google AdSense & ads.txt Verification
+        ads_txt = client.get("/ads.txt")
+        assert ads_txt.status_code == 200
+        assert "google.com" in ads_txt.text
+        adsense_cfg = client.get("/api/admin/adsense")
+        assert adsense_cfg.status_code == 200
+        assert adsense_cfg.json()["account_email"] == "anoopranjan.1983@gmail.com"
+        print(f"✓ Google AdSense Universal Integration: /ads.txt and config mapped for {adsense_cfg.json()['account_email']}")
+
         # 10. Channel CRUD in JSON
         new_ch = {
             "channel_name": "JSON Test Broadcaster",
@@ -140,9 +149,10 @@ def run_integration_tests():
         print("✓ Channel CRUD: Created, Updated, and Deleted channel from data/channels.json")
 
         # 11. Favourites System
-        fav_toggle = client.post("/api/user/favourites/toggle", json={"channel_id": 1, "client_token": "json_user_1"})
+        test_client_token = f"test_user_{int(time.time())}"
+        fav_toggle = client.post("/api/user/favourites/toggle", json={"channel_id": 1, "client_token": test_client_token})
         assert fav_toggle.status_code == 200
-        fav_list = client.get("/api/user/favourites?client_token=json_user_1")
+        fav_list = client.get(f"/api/user/favourites?client_token={test_client_token}")
         assert fav_list.status_code == 200
         assert any(c["id"] == 1 for c in fav_list.json())
         print("✓ Favourites: Persisted in data/favourites.json")

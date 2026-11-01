@@ -2,7 +2,7 @@ import os
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -102,6 +102,39 @@ async def serve_index():
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return HTMLResponse("<h1>BharatStream Frontend is building...</h1>")
+
+@app.get("/ads.txt", response_class=PlainTextResponse, tags=["Monetization"])
+def serve_ads_txt():
+    """
+    Official Google AdSense ads.txt authorization record.
+    Required by Google Mediapartners crawler to authenticate publisher ID.
+    """
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "adsense_config.json")
+    pub_id = "pub-9847120394857102"
+    if os.path.exists(config_path):
+        try:
+            import json
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                raw_id = data.get("publisher_id", "ca-pub-9847120394857102")
+                pub_id = raw_id.replace("ca-", "")
+        except Exception:
+            pass
+    return f"google.com, {pub_id}, DIRECT, f08c47fec0942fa0\n"
+
+@app.get("/api/admin/adsense", tags=["Monetization"])
+def get_adsense_config():
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "adsense_config.json")
+    if os.path.exists(config_path):
+        import json
+        with open(config_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {
+        "account_email": "anoopranjan.1983@gmail.com",
+        "publisher_id": "ca-pub-9847120394857102",
+        "is_adsense_enabled": True,
+        "auto_ads_enabled": True
+    }
 
 @app.get("/admin", response_class=FileResponse, tags=["Frontend"])
 async def serve_admin():
