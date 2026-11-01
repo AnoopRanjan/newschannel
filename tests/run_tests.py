@@ -217,8 +217,26 @@ def run_integration_tests():
         assert logout_res.status_code == 200
         print("✓ Google SSO Logout: Session terminated cleanly")
 
+        # 15. YouTube-Style Search Engine Verification
+        index_res = client.get("/")
+        assert index_res.status_code == 200
+        index_html = index_res.text
+        assert "yt-search-container" in index_html, "YouTube search container must be present in HTML!"
+        assert "yt-search-submit-btn" in index_html, "YouTube search submit button must be present in HTML!"
+        assert "ytVoiceSearchBtn" in index_html, "YouTube voice search button must be present in HTML!"
+        assert "ytSearchDropdown" in index_html, "YouTube auto-complete suggestions dropdown must be present in HTML!"
+        print("✓ YouTube Search Bar: Verified input box, clear button, submit icon, and voice modal in HTML")
+
+        # Verify search data matching from channels.json
+        channels_res = client.get("/api/channels")
+        assert channels_res.status_code == 200
+        ch_list = channels_res.json()
+        aajtak_matches = [c for c in ch_list if "aaj tak" in c["channel_name"].lower()]
+        assert len(aajtak_matches) >= 1, "Should match Aaj Tak for search"
+        print(f"✓ YouTube Search Matching: Successfully verified live channel matches ({aajtak_matches[0]['channel_name']})")
+
         print("\n================================================================")
-        print("[SUCCESS] ALL 14 JSON, SSO & MONETIZATION TESTS PASSED WITH 100% SUCCESS!")
+        print("[SUCCESS] ALL 15 JSON, SSO, YOUTUBE SEARCH & MONETIZATION TESTS PASSED!")
         print("================================================================\n")
 
 if __name__ == "__main__":

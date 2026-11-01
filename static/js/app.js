@@ -23,6 +23,15 @@ class BharatStreamApp {
     this.preferredLanguage = 'All';
     this.clientToken = this.getOrCreateClientToken();
 
+    // YouTube Search Engine State
+    this.searchQuery = '';
+    this.searchFilter = 'all';
+    this.searchHistory = this.loadSearchHistory();
+    this.activeSuggestionIndex = -1;
+    this.currentSuggestions = [];
+    this.voiceRecognition = null;
+    this.searchDebounceTimer = null;
+
     this.regionalLanguages = [
       { name: 'Hindi', script: 'हिंदी', gradient: 'linear-gradient(135deg, #b91c1c, #450a0a)', watermark: 'हिं' },
       { name: 'Tamil', script: 'தமிழ்', gradient: 'linear-gradient(135deg, #c2410c, #431407)', watermark: 'த' },
@@ -76,6 +85,7 @@ class BharatStreamApp {
     }
 
     this.renderActiveView();
+    this.initYouTubeSearch();
     this.checkDeepLinkParams();
     this.checkLastWatchedPrompt();
   }
@@ -114,15 +124,15 @@ class BharatStreamApp {
       });
     }
 
-    const searchInput = document.getElementById('globalSearchInput');
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        this.filterChannelsBySearch(e.target.value.trim().toLowerCase());
-      });
-    }
-
     window.addEventListener('hashchange', () => {
       const hash = window.location.hash.replace('#', '');
+      if (hash.startsWith('search')) {
+        const queryMatch = hash.match(/[?&]q=([^&]+)/);
+        if (queryMatch) {
+          this.executeYouTubeSearch(decodeURIComponent(queryMatch[1]), false);
+        }
+        return;
+      }
       if (hash && ['home', 'india', 'regional', 'international', 'trending', 'categories', 'favourites', 'newpaper'].includes(hash)) {
         this.switchTab(hash, false);
       }
@@ -334,8 +344,13 @@ class BharatStreamApp {
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    const searchInput = document.getElementById('globalSearchInput');
-    if (searchInput) searchInput.value = '';
+    if (tabName !== 'search') {
+      const searchInput = document.getElementById('globalSearchInput');
+      if (searchInput) searchInput.value = '';
+      const clearBtn = document.getElementById('ytSearchClearBtn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      this.hideSearchDropdown();
+    }
 
     this.renderActiveView();
   }
@@ -377,6 +392,9 @@ class BharatStreamApp {
         break;
       case 'favourites':
         this.renderFavouritesView(mainView);
+        break;
+      case 'search':
+        this.renderYouTubeSearchResults(mainView);
         break;
       default:
         this.renderHomeView(mainView);
@@ -1103,40 +1121,585 @@ class BharatStreamApp {
     `;
   }
 
-  /* ================= SEARCH FILTERING ================= */
-  filterChannelsBySearch(query) {
-    if (!query) {
-      this.renderActiveView();
+  /* ================= YOUTUBE-GRADE SEARCH ENGINE ================= */
+
+  loadSearchHistory() {
+    try {
+      const saved = localStorage.getItem('yt_search_history');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return ['Aaj Tak Live', 'DLF News NewPaper', 'Tamil News', 'NDTV 24x7', 'India Today'];
+  }
+
+  saveSearchHistory(query) {
+    if (!query || typeof query !== 'string') return;
+    const clean = query.trim();
+    if (!clean) return;
+    this.searchHistory = [clean, ...this.searchHistory.filter(q => q.toLowerCase() !== clean.toLowerCase())].slice(0, 10);
+    try {
+      localStorage.setItem('yt_search_history', JSON.stringify(this.searchHistory));
+    } catch (e) {}
+  }
+
+  deleteSearchHistoryItem(query, e) {
+    if (e) e.stopPropagation();
+    this.searchHistory = this.searchHistory.filter(q => q !== query);
+    try {
+      localStorage.setItem('yt_search_history', JSON.stringify(this.searchHistory));
+    } catch (e) {}
+    const searchInput = document.getElementById('globalSearchInput');
+    if (searchInput && !searchInput.value.trim()) {
+      this.renderSearchDropdown(this.searchHistory, true);
+    }
+  }
+
+  initYouTubeSearch() {
+    const searchInput = document.getElementById('globalSearchInput');
+    const clearBtn = document.getElementById('ytSearchClearBtn');
+    const dropdown = document.getElementById('ytSearchDropdown');
+
+    if (!searchInput) return;
+
+    // 1. Debounced auto-complete on input
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value;
+      if (clearBtn) clearBtn.style.display = q.length > 0 ? 'flex' : 'none';
+
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = setTimeout(() => {
+        if (!q.trim()) {
+          this.renderSearchDropdown(this.searchHistory, true);
+        } else {
+          const suggestions = this.getYouTubeSuggestions(q.trim());
+          this.renderSearchDropdown(suggestions, false);
+        }
+      }, 120);
+    });
+
+    // 2. Focus shows suggestions / history
+    searchInput.addEventListener('focus', () => {
+      const q = searchInput.value.trim();
+      if (!q) {
+        this.renderSearchDropdown(this.searchHistory, true);
+      } else {
+        const suggestions = this.getYouTubeSuggestions(q);
+        this.renderSearchDropdown(suggestions, false);
+      }
+    });
+
+    // 3. Keyboard navigation (ArrowUp, ArrowDown, Enter, Escape)
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        this.navigateDropdown(1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        this.navigateDropdown(-1);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        this.executeYouTubeSearch();
+      } else if (e.key === 'Escape') {
+        this.hideSearchDropdown();
+      }
+    });
+
+    // 4. Outside click closes dropdown
+    document.addEventListener('click', (e) => {
+      const container = document.querySelector('.yt-search-container');
+      if (container && !container.contains(e.target)) {
+        this.hideSearchDropdown();
+      }
+    });
+  }
+
+  navigateDropdown(direction) {
+    const dropdown = document.getElementById('ytSearchDropdown');
+    const searchInput = document.getElementById('globalSearchInput');
+    if (!dropdown || dropdown.style.display === 'none') return;
+
+    const items = dropdown.querySelectorAll('.yt-suggestion-item');
+    if (items.length === 0) return;
+
+    this.activeSuggestionIndex += direction;
+    if (this.activeSuggestionIndex >= items.length) this.activeSuggestionIndex = 0;
+    if (this.activeSuggestionIndex < 0) this.activeSuggestionIndex = items.length - 1;
+
+    items.forEach((item, idx) => {
+      item.classList.toggle('highlighted', idx === this.activeSuggestionIndex);
+      if (idx === this.activeSuggestionIndex) {
+        const term = item.dataset.query;
+        if (term && searchInput) searchInput.value = term;
+      }
+    });
+  }
+
+  getYouTubeSuggestions(rawQuery) {
+    const q = rawQuery.toLowerCase();
+    const suggestions = [];
+    const seen = new Set();
+
+    const addSuggestion = (text, type = '') => {
+      const lower = text.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        suggestions.push({ text, type });
+      }
+    };
+
+    // 1. Channel names matching query
+    this.allChannels.forEach(c => {
+      if (c.channel_name.toLowerCase().includes(q)) {
+        addSuggestion(c.channel_name, 'Channel');
+        addSuggestion(`${c.channel_name} Live`, 'Live Stream');
+      }
+    });
+
+    // 2. Languages matching query
+    this.regionalLanguages.forEach(l => {
+      if (l.name.toLowerCase().includes(q) || l.script.toLowerCase().includes(q)) {
+        addSuggestion(`${l.name} News Live`, 'Language');
+        addSuggestion(`${l.name} News Channels`, 'Language');
+      }
+    });
+
+    // 3. DLF News Newspaper Bulletins
+    if (q.includes('dlf') || q.includes('news') || q.includes('paper') || 'newspaper'.includes(q)) {
+      addSuggestion('DLF News NewPaper', 'Newspaper');
+      addSuggestion('DLF News: आज के मुख्य समाचार', 'Bulletin');
+      addSuggestion('DLF News: 100 बड़ी खबरें फटाफट', 'Bulletin');
+    }
+
+    // 4. Categories / Topics
+    ['Breaking News Live', 'National News India', 'International News English', 'Parliament Sansad TV', 'Business & Stock Market'].forEach(topic => {
+      if (topic.toLowerCase().includes(q)) {
+        addSuggestion(topic, 'Topic');
+      }
+    });
+
+    return suggestions.slice(0, 8);
+  }
+
+  renderSearchDropdown(items, isHistory = false) {
+    const dropdown = document.getElementById('ytSearchDropdown');
+    if (!dropdown) return;
+
+    this.activeSuggestionIndex = -1;
+
+    if (!items || items.length === 0) {
+      this.hideSearchDropdown();
       return;
     }
 
-    const filtered = this.allChannels.filter(c => 
-      c.channel_name.toLowerCase().includes(query) ||
-      c.language.toLowerCase().includes(query) ||
-      (c.native_language && c.native_language.toLowerCase().includes(query)) ||
-      c.country.toLowerCase().includes(query) ||
-      c.category.toLowerCase().includes(query) ||
-      (c.tags && c.tags.some(t => t.toLowerCase().includes(query)))
+    const searchInput = document.getElementById('globalSearchInput');
+    const currentQ = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    dropdown.innerHTML = items.map((item, idx) => {
+      const term = typeof item === 'string' ? item : item.text;
+      const type = typeof item === 'object' && item.type ? item.type : '';
+      
+      let displayText = term;
+      if (currentQ && displayText.toLowerCase().includes(currentQ)) {
+        const startIdx = displayText.toLowerCase().indexOf(currentQ);
+        const match = displayText.substring(startIdx, startIdx + currentQ.length);
+        displayText = displayText.substring(0, startIdx) + `<strong>${match}</strong>` + displayText.substring(startIdx + currentQ.length);
+      }
+
+      return `
+        <div class="yt-suggestion-item" data-query="${term}" onclick="window.appState.selectSuggestion('${term.replace(/'/g, "\\'")}')">
+          <span class="yt-suggestion-icon">${isHistory ? '🕒' : '🔍'}</span>
+          <span class="yt-suggestion-text">
+            ${displayText}
+            ${type ? `<span class="yt-type-pill">${type}</span>` : ''}
+          </span>
+          ${isHistory ? `
+            <span class="yt-suggestion-delete" onclick="window.appState.deleteSearchHistoryItem('${term.replace(/'/g, "\\'")}', event)" title="Remove from search history">
+              Delete
+            </span>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    dropdown.style.display = 'block';
+  }
+
+  hideSearchDropdown() {
+    const dropdown = document.getElementById('ytSearchDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+    this.activeSuggestionIndex = -1;
+  }
+
+  selectSuggestion(query) {
+    const searchInput = document.getElementById('globalSearchInput');
+    if (searchInput) {
+      searchInput.value = query;
+      const clearBtn = document.getElementById('ytSearchClearBtn');
+      if (clearBtn) clearBtn.style.display = 'flex';
+    }
+    this.hideSearchDropdown();
+    this.executeYouTubeSearch(query);
+  }
+
+  clearSearch() {
+    const searchInput = document.getElementById('globalSearchInput');
+    const clearBtn = document.getElementById('ytSearchClearBtn');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    this.hideSearchDropdown();
+    this.switchTab('home');
+  }
+
+  executeYouTubeSearch(queryText = null, updateUrl = true) {
+    const searchInput = document.getElementById('globalSearchInput');
+    const q = queryText !== null ? queryText : (searchInput ? searchInput.value.trim() : '');
+    
+    if (!q) {
+      this.switchTab('home');
+      return;
+    }
+
+    this.searchQuery = q;
+    this.searchFilter = 'all';
+    this.activeTab = 'search';
+    this.saveSearchHistory(q);
+    this.hideSearchDropdown();
+
+    if (searchInput) {
+      searchInput.value = q;
+      const clearBtn = document.getElementById('ytSearchClearBtn');
+      if (clearBtn) clearBtn.style.display = 'flex';
+    }
+
+    if (updateUrl) {
+      window.location.hash = `search?q=${encodeURIComponent(q)}`;
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    this.renderActiveView();
+  }
+
+  setSearchFilter(filterKey) {
+    this.searchFilter = filterKey;
+    const mainView = document.getElementById('mainContentView');
+    if (mainView && this.activeTab === 'search') {
+      this.renderYouTubeSearchResults(mainView);
+    }
+  }
+
+  /* ================= YOUTUBE VOICE SEARCH (Web Speech API) ================= */
+  startVoiceSearch() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const modal = document.getElementById('ytVoiceModal');
+    const statusText = document.getElementById('ytVoiceStatusText');
+    const micBtn = document.getElementById('ytVoiceSearchBtn');
+
+    if (!SpeechRecognition) {
+      alert('Voice Search is not supported by this browser. Please type your search query.');
+      const searchInput = document.getElementById('globalSearchInput');
+      if (searchInput) searchInput.focus();
+      return;
+    }
+
+    try {
+      this.voiceRecognition = new SpeechRecognition();
+      this.voiceRecognition.continuous = false;
+      this.voiceRecognition.interimResults = false;
+      this.voiceRecognition.lang = 'en-IN';
+
+      if (modal) modal.style.display = 'flex';
+      if (micBtn) micBtn.classList.add('listening');
+      if (statusText) statusText.textContent = 'Listening...';
+
+      this.voiceRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (statusText) statusText.textContent = `"${transcript}"`;
+        setTimeout(() => {
+          this.stopVoiceSearch();
+          this.executeYouTubeSearch(transcript);
+        }, 500);
+      };
+
+      this.voiceRecognition.onerror = (e) => {
+        if (statusText) statusText.textContent = 'Did not hear anything. Tap to speak again.';
+      };
+
+      this.voiceRecognition.onend = () => {
+        if (micBtn) micBtn.classList.remove('listening');
+      };
+
+      this.voiceRecognition.start();
+    } catch (err) {
+      if (modal) modal.style.display = 'none';
+      if (micBtn) micBtn.classList.remove('listening');
+    }
+  }
+
+  stopVoiceSearch() {
+    const modal = document.getElementById('ytVoiceModal');
+    const micBtn = document.getElementById('ytVoiceSearchBtn');
+    if (modal) modal.style.display = 'none';
+    if (micBtn) micBtn.classList.remove('listening');
+    if (this.voiceRecognition) {
+      try { this.voiceRecognition.stop(); } catch (e) {}
+      this.voiceRecognition = null;
+    }
+  }
+
+  /* ================= YOUTUBE SEARCH RESULTS VIEW ================= */
+  renderYouTubeSearchResults(container) {
+    const q = (this.searchQuery || '').trim().toLowerCase();
+    const filter = this.searchFilter || 'all';
+
+    // 1. Channel Matches
+    let matchedChannels = this.allChannels.filter(c => 
+      c.channel_name.toLowerCase().includes(q) ||
+      c.language.toLowerCase().includes(q) ||
+      (c.native_language && c.native_language.toLowerCase().includes(q)) ||
+      c.country.toLowerCase().includes(q) ||
+      c.category.toLowerCase().includes(q) ||
+      (c.tags && c.tags.some(t => t.toLowerCase().includes(q))) ||
+      (c.description && c.description.toLowerCase().includes(q))
     );
 
-    const container = document.getElementById('mainContentView');
-    if (!container) return;
+    // 2. DLF News Newspaper Bulletins Matches
+    let matchedNewspaper = this.newspaperVideos.filter(v =>
+      v.title.toLowerCase().includes(q) ||
+      v.channel_name.toLowerCase().includes(q) ||
+      (v.description && v.description.toLowerCase().includes(q)) ||
+      q.includes('dlf') || q.includes('paper') || q.includes('news')
+    );
+
+    // Filter Chips
+    if (filter === 'live') {
+      matchedChannels = matchedChannels.filter(c => c.verification_status === 'healthy' || c.stream_type === 'youtube_live');
+      matchedNewspaper = [];
+    } else if (filter === 'channels') {
+      matchedNewspaper = [];
+    } else if (filter === 'national') {
+      matchedChannels = matchedChannels.filter(c => c.country === 'India' && ['National', 'Business', 'Parliament'].includes(c.category));
+      matchedNewspaper = [];
+    } else if (filter === 'regional') {
+      matchedChannels = matchedChannels.filter(c => c.category === 'Regional' || this.regionalLanguages.some(l => l.name.toLowerCase() === c.language.toLowerCase()));
+      matchedNewspaper = [];
+    } else if (filter === 'international') {
+      matchedChannels = matchedChannels.filter(c => c.category === 'International');
+      matchedNewspaper = [];
+    } else if (filter === 'newpaper') {
+      matchedChannels = [];
+    } else if (filter === 'watchlist') {
+      matchedChannels = matchedChannels.filter(c => this.favourites.has(c.id));
+      matchedNewspaper = [];
+    }
+
+    // Top Channel Match (if query strongly identifies a broadcaster)
+    const exactChannel = matchedChannels.find(c => 
+      c.channel_name.toLowerCase() === q ||
+      c.slug === q ||
+      c.channel_name.toLowerCase().startsWith(q) ||
+      q.includes(c.channel_name.toLowerCase())
+    );
+
+    const totalResults = matchedChannels.length + matchedNewspaper.length;
 
     container.innerHTML = `
-      <div class="section-header" style="margin-bottom: 20px;">
-        <h2 class="shelf-title">
-          <span class="shelf-accent">|</span> Search Results for "${query}" (${filtered.length} channels)
-        </h2>
-      </div>
-      <div class="channel-grid">
-        ${filtered.length > 0 
-          ? filtered.map(c => this.createCinemaCardHTML(c)).join('')
-          : `<div style="grid-column: 1/-1; padding: 50px; text-align: center; color: var(--text-muted);">
-               No live channels match "${query}". Try searching for channel names like "DD News", "Aaj Tak", or languages like "Tamil" or "English".
-             </div>`
-        }
+      <div class="yt-results-container">
+        <!-- YouTube Filter Chips Bar -->
+        <div class="yt-filter-bar">
+          <button class="yt-filter-chip ${filter === 'all' ? 'active' : ''}" onclick="window.appState.setSearchFilter('all')">All</button>
+          <button class="yt-filter-chip ${filter === 'live' ? 'active' : ''}" onclick="window.appState.setSearchFilter('live')">🔴 Live Now</button>
+          <button class="yt-filter-chip ${filter === 'channels' ? 'active' : ''}" onclick="window.appState.setSearchFilter('channels')">📺 Channels</button>
+          <button class="yt-filter-chip ${filter === 'national' ? 'active' : ''}" onclick="window.appState.setSearchFilter('national')">🇮🇳 National</button>
+          <button class="yt-filter-chip ${filter === 'regional' ? 'active' : ''}" onclick="window.appState.setSearchFilter('regional')">🗺️ Regional</button>
+          <button class="yt-filter-chip ${filter === 'international' ? 'active' : ''}" onclick="window.appState.setSearchFilter('international')">🌐 International</button>
+          <button class="yt-filter-chip ${filter === 'newpaper' ? 'active' : ''}" onclick="window.appState.setSearchFilter('newpaper')">📰 NewPaper DLF</button>
+          <button class="yt-filter-chip ${filter === 'watchlist' ? 'active' : ''}" onclick="window.appState.setSearchFilter('watchlist')">⭐ In Watchlist</button>
+        </div>
+
+        <div style="font-size: 0.88rem; color: #aaaaaa; margin-bottom: 20px;">
+          Showing ${totalResults} results for <span style="color: #fff; font-weight: 700;">"${this.searchQuery}"</span>
+        </div>
+
+        <!-- YouTube Channel Highlight Card (if strong channel match) -->
+        ${exactChannel && filter !== 'newpaper' ? this.createYouTubeChannelCardHTML(exactChannel) : ''}
+
+        <!-- Results List -->
+        ${totalResults > 0 ? `
+          <div class="yt-results-list">
+            <!-- Channel Live Streams -->
+            ${matchedChannels.map(c => this.createYouTubeVideoCardHTML(c)).join('')}
+
+            <!-- DLF News Newspaper Bulletins -->
+            ${matchedNewspaper.map(v => this.createYouTubeNewspaperCardHTML(v)).join('')}
+          </div>
+        ` : `
+          <!-- YouTube "Did You Mean" Suggestion & Fallback -->
+          <div class="yt-did-you-mean">
+            <div class="yt-did-you-mean-title">No exact matches for "${this.searchQuery}". Try exploring popular news searches:</div>
+            <div class="yt-pill-list">
+              <button class="yt-suggested-pill" onclick="window.appState.executeYouTubeSearch('Aaj Tak Live')">Aaj Tak Live</button>
+              <button class="yt-suggested-pill" onclick="window.appState.executeYouTubeSearch('DLF News NewPaper')">DLF News NewPaper</button>
+              <button class="yt-suggested-pill" onclick="window.appState.executeYouTubeSearch('Tamil News Live')">Tamil News Live</button>
+              <button class="yt-suggested-pill" onclick="window.appState.executeYouTubeSearch('NDTV 24x7')">NDTV 24x7</button>
+              <button class="yt-suggested-pill" onclick="window.appState.executeYouTubeSearch('Telugu News')">Telugu News</button>
+              <button class="yt-suggested-pill" onclick="window.appState.executeYouTubeSearch('India Today')">India Today</button>
+              <button class="yt-suggested-pill" onclick="window.appState.executeYouTubeSearch('Al Jazeera English')">Al Jazeera English</button>
+            </div>
+          </div>
+
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 16px;">
+            Trending Live News Broadcasters Right Now
+          </h3>
+          <div class="yt-results-list">
+            ${this.allChannels.slice(0, 6).map(c => this.createYouTubeVideoCardHTML(c)).join('')}
+          </div>
+        `}
       </div>
     `;
+  }
+
+  createYouTubeChannelCardHTML(channel) {
+    const isFav = this.isFavourite(channel.id);
+    const logoUrl = channel.logo_url || '/static/img/default-tv.svg';
+    const ytChannelUrl = channel.official_youtube_channel || `https://www.youtube.com/watch?v=${channel.video_id}`;
+
+    return `
+      <div class="yt-channel-card">
+        <div class="yt-channel-avatar-wrap">
+          <img class="yt-channel-avatar" src="${logoUrl}" alt="${channel.channel_name}" onerror="this.src='/static/img/default-tv.svg'">
+        </div>
+        <div class="yt-channel-info">
+          <div class="yt-channel-title">
+            <span>${channel.channel_name}</span>
+            <span class="yt-verified-check" title="Official Verified Broadcaster">✔</span>
+          </div>
+          <div class="yt-channel-subtext">
+            @${channel.slug} • ${channel.native_language || channel.language} • ${channel.country} • ${channel.category}
+          </div>
+          <p class="yt-channel-desc">
+            ${channel.description || 'Watch 24/7 continuous official live television broadcasting, breaking news developments, prime-time analysis, and special reports.'}
+          </p>
+          <div class="yt-channel-actions">
+            <button class="btn-primary" style="padding: 8px 20px; font-size: 0.88rem;" onclick="window.playerManager.playChannel(window.appState.getChannelById(${channel.id}))">
+              ▶ Watch Live Stream
+            </button>
+            <button class="btn-outline" style="padding: 8px 18px; font-size: 0.88rem;" onclick="window.appState.toggleFavourite(${channel.id})">
+              <span>${isFav ? '❤️' : '➕'}</span> ${isFav ? 'In Watchlist' : 'Add to Watchlist'}
+            </button>
+            <a href="${ytChannelUrl}" target="_blank" rel="noopener noreferrer" class="btn-outline" style="padding: 8px 18px; font-size: 0.88rem;">
+              🔴 YouTube Channel ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  createYouTubeVideoCardHTML(channel) {
+    const isFav = this.isFavourite(channel.id);
+    const bgUrl = channel.backdrop_url || channel.logo_url || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop';
+    const logoUrl = channel.logo_url || '/static/img/default-tv.svg';
+    const titleHighlighted = this.highlightText(`${channel.channel_name} Live News • 24/7 Official Broadcast`, this.searchQuery);
+    const descHighlighted = this.highlightText(channel.description || 'Watch official live continuous broadcasting and prime-time analysis.', this.searchQuery);
+
+    return `
+      <div class="yt-video-card" onclick="window.playerManager.playChannel(window.appState.getChannelById(${channel.id}))">
+        <div class="yt-thumb-wrap" style="background-image: url('${bgUrl}');">
+          <div class="yt-badge-live">
+            <span class="live-dot" style="background:#fff; width:6px; height:6px;"></span> LIVE
+          </div>
+          <span class="yt-badge-duration">${channel.quality || '1080p HD'}</span>
+          <div class="yt-thumb-play-overlay">
+            <div class="yt-play-icon">▶</div>
+          </div>
+        </div>
+
+        <div class="yt-content-wrap">
+          <div class="yt-card-title">${titleHighlighted}</div>
+          
+          <div class="yt-card-meta">
+            <span style="font-weight:700; color:#fff;">${channel.view_count || '12.4K'} watching</span> • 
+            <span>${channel.language}</span> • 
+            <span>${channel.country}</span> • 
+            <span style="color: #4ade80;">✔ Verified Stream</span>
+          </div>
+
+          <div class="yt-channel-row">
+            <img class="yt-channel-mini-logo" src="${logoUrl}" alt="${channel.channel_name}" onerror="this.src='/static/img/default-tv.svg'">
+            <span class="yt-channel-mini-name">
+              ${channel.channel_name}
+              <span class="yt-verified-check" style="width:12px; height:12px; font-size:0.55rem;">✔</span>
+            </span>
+          </div>
+
+          <div class="yt-card-desc">${descHighlighted}</div>
+
+          <div class="yt-card-actions" onclick="event.stopPropagation()">
+            <button class="btn-primary" style="padding: 6px 16px; font-size: 0.82rem;" onclick="window.playerManager.playChannel(window.appState.getChannelById(${channel.id}))">
+              ▶ Watch Live
+            </button>
+            <button class="btn-outline" style="padding: 6px 14px; font-size: 0.82rem;" onclick="window.appState.toggleFavourite(${channel.id})">
+              <span>${isFav ? '❤️' : '➕'}</span> ${isFav ? 'In Watchlist' : 'Watchlist'}
+            </button>
+            <button class="btn-outline" style="padding: 6px 12px; font-size: 0.82rem;" onclick="window.playerManager.shareChannel()">
+              🔗 Share
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  createYouTubeNewspaperCardHTML(video) {
+    const thumbUrl = video.thumbnail_url || `https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`;
+    const titleHighlighted = this.highlightText(video.title, this.searchQuery);
+    const descHighlighted = this.highlightText(video.description || 'Watch DLF News daily newspaper video edition and breaking updates from YouTube.', this.searchQuery);
+
+    return `
+      <div class="yt-video-card" onclick="window.appState.playNewspaperVideo(${video.id})">
+        <div class="yt-thumb-wrap" style="background-image: url('${thumbUrl}');">
+          <span class="yt-badge-live" style="background:#e50914;">📰 NEWPAPER</span>
+          <span class="yt-badge-duration">${video.duration || 'Daily Edition'}</span>
+          <div class="yt-thumb-play-overlay">
+            <div class="yt-play-icon">▶</div>
+          </div>
+        </div>
+
+        <div class="yt-content-wrap">
+          <div class="yt-card-title">${titleHighlighted}</div>
+          
+          <div class="yt-card-meta">
+            <span style="font-weight:700; color:#fff;">${video.views || '1.1M views'}</span> • 
+            <span>${video.published_label || 'Recent Bulletin'}</span> • 
+            <span style="color: var(--gold-accent);">DLF News YouTube</span>
+          </div>
+
+          <div class="yt-channel-row">
+            <div style="width:24px; height:24px; border-radius:50%; background:#e50914; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.65rem;">DLF</div>
+            <span class="yt-channel-mini-name">
+              DLF News (@DLSNews)
+              <span class="yt-verified-check" style="width:12px; height:12px; font-size:0.55rem;">✔</span>
+            </span>
+          </div>
+
+          <div class="yt-card-desc">${descHighlighted}</div>
+
+          <div class="yt-card-actions" onclick="event.stopPropagation()">
+            <button class="btn-primary" style="padding: 6px 16px; font-size: 0.82rem;" onclick="window.appState.playNewspaperVideo(${video.id})">
+              ▶ Watch Video
+            </button>
+            <a href="https://www.youtube.com/watch?v=${video.video_id}" target="_blank" rel="noopener noreferrer" class="btn-outline" style="padding: 6px 14px; font-size: 0.82rem;">
+              🔴 YouTube ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  highlightText(text, query) {
+    if (!text || !query) return text || '';
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
   }
 
   createHeadlineCardHTML(headline) {
