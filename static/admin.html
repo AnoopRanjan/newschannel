@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BharatStream Administration Portal</title>
+  <link rel="icon" href="/static/img/default-tv.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 4px;
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .data-table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+    .data-table th {
+      background: #0d1322;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .data-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+    }
+    .data-table tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .admin-subnav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+    .admin-nav-btn {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .admin-nav-btn.active {
+      background: var(--primary-accent);
+      color: #fff;
+      border-color: var(--primary-accent);
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .form-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: var(--primary-accent);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <div class="brand-logo" onclick="window.location.href='/'">
+        <span class="logo-badge">ADMIN</span>
+        <span class="brand-text">Bharat<span>Stream</span> Management</span>
+      </div>
+
+      <div class="nav-actions">
+        <a href="/" class="btn-outline">← Back to Live Portal</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-container" style="padding-top: 24px;">
+    
+    <!-- Stats Overview -->
+    <div class="admin-stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Total Channels</span>
+        <span id="statTotalChannels" class="stat-val">--</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Active Broadcasts</span>
+        <span id="statActiveChannels" class="stat-val" style="color: #60a5fa;">--</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Verified Healthy</span>
+        <span id="statHealthyStreams" class="stat-val" style="color: #10b981;">--</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Degraded / Fallback</span>
+        <span id="statDegradedStreams" class="stat-val" style="color: #f59e0b;">--</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Open Viewer Reports</span>
+        <span id="statOpenReports" class="stat-val" style="color: #ef4444;">--</span>
+      </div>
+    </div>
+
+    <!-- Admin Section Tabs -->
+    <div class="admin-subnav">
+      <button class="admin-nav-btn active" data-section="sectionChannels">📺 Channels Directory</button>
+      <button class="admin-nav-btn" data-section="sectionVerifier">🛡️ Automated Stream Verifier</button>
+      <button class="admin-nav-btn" data-section="sectionReports">🚩 Viewer Reports</button>
+      <button class="admin-nav-btn" data-section="sectionAds">💰 Monetization & Ads</button>
+    </div>
+
+    <!-- 1. Channels Directory Section -->
+    <section id="sectionChannels" class="admin-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">News Broadcasters Directory</h2>
+          <div class="section-subtitle">Manage authorized stream configurations and live statuses</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="adminChannelSearch" class="search-input" placeholder="Search channels..." style="width: 260px;">
+          <button class="btn-primary" onclick="window.adminApp.openAddModal()">+ Add New Channel</button>
+        </div>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Channel Name</th>
+              <th>Language</th>
+              <th>Country</th>
+              <th>Category</th>
+              <th>Stream Type</th>
+              <th>Health</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminChannelsTbody">
+            <!-- Injected by admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 2. Stream Health Verifier Section -->
+    <section id="sectionVerifier" class="admin-section" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Automated Stream Health Verifier</h2>
+          <div class="section-subtitle">Scheduled & on-demand service checking stream reachability & embedding authorization</div>
+        </div>
+        <div>
+          <button id="btnRunVerification" class="btn-primary" style="background: #10b981;">
+            ⚡ Run Full Stream Verification Now
+          </button>
+        </div>
+      </div>
+
+      <div id="verifierProgressStatus" style="display: none; margin-bottom: 16px;"></div>
+
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Log #</th>
+              <th>Channel</th>
+              <th>Status</th>
+              <th>HTTP Code</th>
+              <th>Diagnostics / Error Message</th>
+              <th>Checked At</th>
+            </tr>
+          </thead>
+          <tbody id="adminLogsTbody">
+            <!-- Injected by admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. Viewer Reports Section -->
+    <section id="sectionReports" class="admin-section" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Viewer Stream Reports</h2>
+          <div class="section-subtitle">Real-time reports submitted by users experiencing stream or playback issues</div>
+        </div>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Report #</th>
+              <th>Channel Name</th>
+              <th>Issue Type</th>
+              <th>User Comment</th>
+              <th>Reported At</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="adminReportsTbody">
+            <!-- Injected by admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Monetization & Ads Section -->
+    <section id="sectionAds" class="admin-section" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Monetization & Ad Placements</h2>
+          <div class="section-subtitle">Configure compliant display ads, responsive banners, and sponsor placements</div>
+        </div>
+      </div>
+
+      <div id="adsManagementContainer">
+        <!-- Injected by admin.js -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Add / Edit Channel Modal -->
+  <div id="channelModal" class="player-modal">
+    <div class="player-dialog" style="max-width: 720px; max-height: 90vh;">
+      <div class="player-header">
+        <h3 id="modalFormTitle" style="color: #fff; font-size: 1.1rem;">Add News Channel</h3>
+        <button class="icon-btn" onclick="window.adminApp.closeModal()">✕</button>
+      </div>
+
+      <form id="channelModalForm" style="padding: 20px; overflow-y: auto;">
+        <input type="hidden" id="editChannelId">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label>Channel Name *</label>
+            <input type="text" id="fChannelName" class="form-input" required placeholder="e.g. DD News">
+          </div>
+
+          <div class="form-group">
+            <label>URL Slug *</label>
+            <input type="text" id="fSlug" class="form-input" required placeholder="e.g. dd-news">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label>Language *</label>
+            <select id="fLanguage" class="form-input">
+              <option value="Hindi">Hindi</option>
+              <option value="English">English</option>
+              <option value="Tamil">Tamil</option>
+              <option value="Telugu">Telugu</option>
+              <option value="Kannada">Kannada</option>
+              <option value="Malayalam">Malayalam</option>
+              <option value="Bengali">Bengali</option>
+              <option value="Marathi">Marathi</option>
+              <option value="Gujarati">Gujarati</option>
+              <option value="Punjabi">Punjabi</option>
+              <option value="Odia">Odia</option>
+              <option value="Assamese">Assamese</option>
+              <option value="Urdu">Urdu</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Country *</label>
+            <input type="text" id="fCountry" class="form-input" required value="India">
+          </div>
+
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="fCategory" class="form-input">
+              <option value="National">National</option>
+              <option value="Regional">Regional</option>
+              <option value="International">International</option>
+              <option value="Business">Business</option>
+              <option value="Parliament">Parliament</option>
+              <option value="Tech & Science">Tech & Science</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label>Stream Type *</label>
+            <select id="fStreamType" class="form-input">
+              <option value="youtube_live">YouTube Live Stream (via Iframe API)</option>
+              <option value="hls">Authorized HLS (.m3u8)</option>
+              <option value="official_embed">Official Broadcaster Embed Player</option>
+              <option value="portal_fallback">Broadcaster Portal Fallback Only</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>YouTube Video ID</label>
+            <input type="text" id="fVideoId" class="form-input" placeholder="e.g. 2UxbE8q0bEQ">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Authorized Embed URL (or HLS .m3u8 URL)</label>
+          <input type="url" id="fEmbedUrl" class="form-input" placeholder="https://...">
+        </div>
+
+        <div class="form-group">
+          <label>Official Channel Logo URL (PNG/SVG)</label>
+          <input type="url" id="fLogoUrl" class="form-input" placeholder="https://...">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label>Official Broadcaster Website</label>
+            <input type="url" id="fWebsite" class="form-input" placeholder="https://...">
+          </div>
+
+          <div class="form-group">
+            <label>Official Web Stream Fallback URL</label>
+            <input type="url" id="fFallbackUrl" class="form-input" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Channel Description</label>
+          <textarea id="fDesc" class="form-input" rows="2" placeholder="Brief description of the broadcaster..."></textarea>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="fIsActive" checked>
+          <label for="fIsActive" style="margin-bottom: 0; cursor: pointer;">Channel is Active & Publicly Visible</label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+          <button type="button" class="btn-outline" onclick="window.adminApp.closeModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Save Channel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BharatStream - India Live News & Global News Streaming Platform</title>
+  <meta name="description" content="Watch officially available free live news streams from Indian national, regional, and international English broadcasters legally without subscription.">
+  <link rel="icon" href="/static/img/default-tv.svg" type="image/svg+xml">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <!-- HLS.js for authorized .m3u8 live video streams -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+
+  <!-- Top Certified Broadcast Notice Bar -->
+  <div class="top-notice-bar">
+    <div>
+      <span>⚖️ <strong>100% Legal & Free Live Streams</strong>: Sourced exclusively from official broadcasters & authorized public feeds. No unauthorized IPTV or piracy.</span>
+    </div>
+    <div>
+      <a href="/admin">Admin Dashboard ↗</a>
+    </div>
+  </div>
+
+  <!-- Main Sticky Navigation Bar -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <div class="brand-logo" onclick="window.appState.switchTab('home')">
+        <span class="logo-badge">LIVE</span>
+        <span class="brand-text">Bharat<span>Stream</span></span>
+      </div>
+
+      <div class="search-bar-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="globalSearchInput" class="search-input" placeholder="Search channels by name, language, or topic (e.g. DD News, Tamil, Business)...">
+      </div>
+
+      <div class="nav-actions">
+        <!-- Preferred Language Dropdown -->
+        <select id="navbarLangSelect" class="lang-select" title="Preferred Language">
+          <option value="All">🌐 All Languages</option>
+          <option value="Hindi">हिंदी (Hindi)</option>
+          <option value="English">English</option>
+          <option value="Tamil">தமிழ் (Tamil)</option>
+          <option value="Telugu">తెలుగు (Telugu)</option>
+          <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+          <option value="Malayalam">മലയാളം (Malayalam)</option>
+          <option value="Bengali">বাংলা (Bengali)</option>
+          <option value="Marathi">मराठी (Marathi)</option>
+          <option value="Gujarati">ગુજરાતી (Gujarati)</option>
+          <option value="Punjabi">ਪੰਜਾਬੀ (Punjabi)</option>
+          <option value="Odia">ଓଡ଼ିଆ (Odia)</option>
+          <option value="Assamese">অসমীয়া (Assamese)</option>
+          <option value="Urdu">اردو (Urdu)</option>
+        </select>
+
+        <button class="btn-outline" onclick="window.appState.switchTab('favourites')">
+          ⭐ Favourites
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="main-nav-tabs">
+    <div class="tabs-container">
+      <button class="tab-btn active" data-tab="home">🏠 Home</button>
+      <button class="tab-btn" data-tab="india">🇮🇳 India Live News</button>
+      <button class="tab-btn" data-tab="regional">🗺️ Regional News</button>
+      <button class="tab-btn" data-tab="international">🌐 International News</button>
+      <button class="tab-btn" data-tab="trending">🔥 Trending News</button>
+      <button class="tab-btn" data-tab="categories">📑 News Categories</button>
+      <button class="tab-btn" data-tab="favourites">⭐ My Favourite Channels</button>
+    </div>
+  </nav>
+
+  <!-- Real-Time Breaking News Ticker -->
+  <div class="breaking-ticker">
+    <div class="ticker-badge">
+      <span class="live-dot"></span>
+      BREAKING
+    </div>
+    <div class="ticker-content-track" id="tickerTrack">
+      <span class="ticker-item">Loading real-time news dispatches from verified press bureaus...</span>
+    </div>
+  </div>
+
+  <!-- Main App Container -->
+  <main class="app-container">
+    
+    <!-- Top Responsive Ad Placement Slot -->
+    <div id="topAdPlacement" class="ad-slot-container" style="display: none;"></div>
+
+    <!-- Resume Watching Prompt (if user watched channel previously) -->
+    <div id="resumeWatchingBar" style="display: none;"></div>
+
+    <!-- Dynamic SPA Content Area -->
+    <section id="mainContentView">
+      <!-- Injected via app.js depending on active tab -->
+    </section>
+
+  </main>
+
+  <!-- Streaming Video Player Modal Dialog -->
+  <div id="playerModal" class="player-modal">
+    <div id="playerDialog" class="player-dialog">
+      <!-- Player Header -->
+      <div class="player-header">
+        <div class="player-title-info">
+          <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+          <div>
+            <h3 id="playerChannelTitle" style="font-size: 1.05rem; font-weight: 700; color: #fff;">Channel Name</h3>
+            <span id="playerChannelMeta" style="font-size: 0.76rem; color: var(--text-muted);">Language • Country</span>
+          </div>
+        </div>
+
+        <div class="player-actions">
+          <button id="playerFavBtn" class="icon-btn" title="Toggle Favourite">🤍</button>
+          <button id="theatreModeBtn" class="icon-btn" title="Toggle Theatre Mode (T)">🗖</button>
+          <button id="fullscreenBtn" class="icon-btn" title="Toggle Fullscreen (F)">⛶</button>
+          <button id="shareStreamBtn" class="icon-btn" title="Share Channel Link">🔗</button>
+          <button id="reportStreamBtn" class="icon-btn" title="Report Stream Outage">🚩</button>
+          <button id="closePlayerBtn" class="icon-btn" style="color: #ef4444;" title="Close Player (Esc)">✕</button>
+        </div>
+      </div>
+
+      <!-- Player Content Body -->
+      <div class="player-body">
+        <div class="player-main-view">
+          <div id="videoContainer" class="video-container">
+            <!-- Iframe / Video element injected dynamically -->
+          </div>
+
+          <!-- Non-Intrusive Below-Player Ad Slot -->
+          <div class="ad-slot-container" style="margin-top: 14px; padding: 6px 12px; background: rgba(15,23,42,0.6);">
+            <div class="ad-slot-label">SPONSORED BROADCAST SUPPORTER</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+              <span>100% Free & Licensed News Broadcasts across India and Global Networks</span>
+              <a href="https://prasarbharati.gov.in" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; font-size: 0.78rem;">Learn More ↗</a>
+            </div>
+          </div>
+
+          <!-- Channel Details -->
+          <div class="stream-details-bar">
+            <div>
+              <div id="playerVerifiedStatus" style="margin-bottom: 4px;"></div>
+              <p id="playerChannelDesc" class="channel-meta-desc"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar (Related Channels / Quick Switcher) -->
+        <aside class="player-sidebar">
+          <div class="sidebar-header">📺 More Live News Channels</div>
+          <div id="relatedChannelsList" class="related-channel-list">
+            <!-- Injected by player.js -->
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- Professional Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div>
+        <div class="footer-brand">Bharat<span style="color: var(--primary-accent);">Stream</span></div>
+        <p class="footer-sub">
+          BharatStream is an open, legal aggregator of publicly accessible live television news broadcasts from official Indian national, regional (12 languages), and international English broadcasters.
+          All content is streamed directly from official broadcaster players, YouTube IFrame API embeds, or public authorized sources.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Navigation</h4>
+        <ul>
+          <li><a href="#home" onclick="window.appState.switchTab('home')">Home Directory</a></li>
+          <li><a href="#india" onclick="window.appState.switchTab('india')">India Live News</a></li>
+          <li><a href="#regional" onclick="window.appState.switchTab('regional')">Regional News</a></li>
+          <li><a href="#international" onclick="window.appState.switchTab('international')">International News</a></li>
+          <li><a href="#favourites" onclick="window.appState.switchTab('favourites')">My Favourites</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>12 Regional Languages</h4>
+        <ul>
+          <li><a href="#regional" onclick="window.appState.openRegionalLanguage('Hindi')">Hindi News (हिंदी)</a></li>
+          <li><a href="#regional" onclick="window.appState.openRegionalLanguage('Tamil')">Tamil News (தமிழ்)</a></li>
+          <li><a href="#regional" onclick="window.appState.openRegionalLanguage('Telugu')">Telugu News (తెలుగు)</a></li>
+          <li><a href="#regional" onclick="window.appState.openRegionalLanguage('Kannada')">Kannada News (ಕನ್ನಡ)</a></li>
+          <li><a href="#regional" onclick="window.appState.openRegionalLanguage('Malayalam')">Malayalam News (മലയാളം)</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Platform & Admin</h4>
+        <ul>
+          <li><a href="/admin">Admin Dashboard</a></li>
+          <li><a href="/api/docs" target="_blank">FastAPI Documentation</a></li>
+          <li><a href="/health" target="_blank">System Health Check</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      © 2026 BharatStream. Built with Python 3.12, FastAPI, SQLAlchemy, and modern web streaming APIs. All broadcaster logos & trade marks belong to their respective copyright owners.
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/static/js/player.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
