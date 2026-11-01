@@ -150,6 +150,25 @@ class AdSettingUpdate(BaseModel):
     html_code: Optional[str] = None
     estimated_cpm: Optional[float] = None
 
+# Google SSO & User Session Schemas
+class GoogleAuthRequest(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[str] = "anoopranjan.1983@gmail.com"
+    name: Optional[str] = "Anoop Ranjan"
+    picture: Optional[str] = None
+    mode: Optional[str] = "sso"
+
+class UserSessionResponse(BaseModel):
+    status: str = "authenticated"
+    email: str
+    name: str
+    picture: Optional[str] = None
+    is_google_sso: bool = True
+    session_token: str
+    adsense_linked: bool = True
+    adsense_publisher_id: Optional[str] = None
+    favourites: List[int] = []
+
 # Admin Stats
 class AdminStatsResponse(BaseModel):
     total_channels: int

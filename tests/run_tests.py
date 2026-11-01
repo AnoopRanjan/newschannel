@@ -162,8 +162,63 @@ def run_integration_tests():
         assert report_res.status_code == 200
         print("✓ User Reports: Persisted in data/reports.json")
 
+        # 13. DLF News / NewPaper YouTube Video Feed (Newest on Top)
+        np_list = client.get("/api/news/newspaper/videos")
+        assert np_list.status_code == 200
+        assert len(np_list.json()) >= 4
+        print(f"✓ NewPaper Feed: Loaded {len(np_list.json())} DLF News videos from data/newspaper_videos.json")
+
+        # Add a new DLF News YouTube video and verify it is placed on top (index 0)
+        new_dlf_video = {
+            "video_url_or_id": "https://www.youtube.com/watch?v=dlf_top_vid",
+            "title": "DLF News: Latest Morning Newspaper Edition",
+            "channel_name": "DLF News"
+        }
+        add_np = client.post("/api/news/newspaper/videos", json=new_dlf_video)
+        assert add_np.status_code == 200
+        created_vid = add_np.json()
+        assert created_vid["video_id"] == "dlf_top_vid"
+
+        # Verify newest is on top
+        np_updated = client.get("/api/news/newspaper/videos")
+        assert np_updated.status_code == 200
+        assert np_updated.json()[0]["video_id"] == "dlf_top_vid", "Newest video must be placed on top of the list!"
+        print("✓ NewPaper Video Adding: Verified newest video is placed on top of list")
+
+        # Clean up test video
+        del_np = client.delete(f"/api/news/newspaper/videos/{created_vid['id']}")
+        assert del_np.status_code == 200
+        print("✓ NewPaper Video Deletion: Cleaned up test video")
+
+        # 14. Google SSO & Gmail Authentication
+        auth_conf = client.get("/api/user/auth/config")
+        assert auth_conf.status_code == 200
+        assert auth_conf.json()["google_sso_enabled"] is True
+        print("✓ Google SSO Config: Verified Google Identity Services & SSO settings")
+
+        sso_login = client.post("/api/user/auth/google", json={
+            "email": "anoopranjan.1983@gmail.com",
+            "name": "Anoop Ranjan",
+            "mode": "google_sso"
+        })
+        assert sso_login.status_code == 200
+        sso_data = sso_login.json()
+        assert sso_data["email"] == "anoopranjan.1983@gmail.com"
+        assert sso_data["is_google_sso"] is True
+        assert sso_data["adsense_linked"] is True
+        print(f"✓ Google SSO Login: Authenticated {sso_data['email']} with Google SSO session token")
+
+        profile_res = client.get(f"/api/user/auth/me?session_token={sso_data['session_token']}")
+        assert profile_res.status_code == 200
+        assert profile_res.json()["email"] == "anoopranjan.1983@gmail.com"
+        print("✓ Google Profile: Retrieved active authenticated session from JSON DB")
+
+        logout_res = client.post("/api/user/auth/logout")
+        assert logout_res.status_code == 200
+        print("✓ Google SSO Logout: Session terminated cleanly")
+
         print("\n================================================================")
-        print("[SUCCESS] ALL 12 JSON & MONETIZATION TESTS PASSED WITH 100% SUCCESS!")
+        print("[SUCCESS] ALL 14 JSON, SSO & MONETIZATION TESTS PASSED WITH 100% SUCCESS!")
         print("================================================================\n")
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import os
 import json
 import threading
+from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -15,6 +16,8 @@ ADS_FILE = os.path.join(DATA_DIR, "ads.json")
 FAVOURITES_FILE = os.path.join(DATA_DIR, "favourites.json")
 REPORTS_FILE = os.path.join(DATA_DIR, "reports.json")
 HEALTH_LOGS_FILE = os.path.join(DATA_DIR, "health_logs.json")
+NEWSPAPER_VIDEOS_FILE = os.path.join(DATA_DIR, "newspaper_videos.json")
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
 _lock = threading.Lock()
 
@@ -139,3 +142,87 @@ class JsonDatabase:
     def save_health_logs(logs: List[Dict[str, Any]]):
         with _lock:
             _save_json(HEALTH_LOGS_FILE, logs)
+
+    @staticmethod
+    def get_newspaper_videos() -> List[Dict[str, Any]]:
+        with _lock:
+            videos = _load_json(NEWSPAPER_VIDEOS_FILE, None)
+            if not videos:
+                try:
+                    from app.seed_json import INITIAL_NEWSPAPER_VIDEOS
+                    videos = [dict(v) for v in INITIAL_NEWSPAPER_VIDEOS]
+                    _save_json(NEWSPAPER_VIDEOS_FILE, videos)
+                except Exception:
+                    videos = []
+            # Keep newest video on top (descending by published_at)
+            return sorted(videos, key=lambda x: x.get("published_at", ""), reverse=True)
+
+    @staticmethod
+    def save_newspaper_videos(videos: List[Dict[str, Any]]):
+        with _lock:
+            # Sort newest on top before saving
+            sorted_videos = sorted(videos, key=lambda x: x.get("published_at", ""), reverse=True)
+            _save_json(NEWSPAPER_VIDEOS_FILE, sorted_videos)
+
+    @staticmethod
+    def add_newspaper_video(video: Dict[str, Any]) -> Dict[str, Any]:
+        with _lock:
+            videos = _load_json(NEWSPAPER_VIDEOS_FILE, None)
+            if not videos:
+                try:
+                    from app.seed_json import INITIAL_NEWSPAPER_VIDEOS
+                    videos = [dict(v) for v in INITIAL_NEWSPAPER_VIDEOS]
+                except Exception:
+                    videos = []
+            
+            # Ensure published_at is set to current time if missing or not latest
+            now_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            if not video.get("published_at"):
+                video["published_at"] = now_iso
+            
+            # Ensure newly added video always has the highest timestamp so it stays strictly on top
+            existing_max = max([str(v.get("published_at", "")) for v in videos], default="")
+            if existing_max and video["published_at"] <= existing_max:
+                # Increment past existing max so it is guaranteed on top
+                video["published_at"] = (now_iso if now_iso > existing_max else existing_max[:-1] + "Z_9")
+                
+            # Insert at beginning so newest video is on top
+            videos.insert(0, video)
+            sorted_videos = sorted(videos, key=lambda x: str(x.get("published_at", "")), reverse=True)
+            _save_json(NEWSPAPER_VIDEOS_FILE, sorted_videos)
+            return video
+
+    @staticmethod
+    def get_users() -> List[Dict[str, Any]]:
+        with _lock:
+            return _load_json(USERS_FILE, [])
+
+    @staticmethod
+    def save_users(users: List[Dict[str, Any]]):
+        with _lock:
+            _save_json(USERS_FILE, users)
+
+    @staticmethod
+    def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+        users = JsonDatabase.get_users()
+        email_clean = email.strip().lower()
+        for u in users:
+            if u.get("email", "").strip().lower() == email_clean:
+                return u
+        return None
+
+    @staticmethod
+    def upsert_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
+        with _lock:
+            users = _load_json(USERS_FILE, [])
+            email_clean = user_data.get("email", "").strip().lower()
+            found = False
+            for idx, u in enumerate(users):
+                if u.get("email", "").strip().lower() == email_clean:
+                    users[idx].update(user_data)
+                    found = True
+                    break
+            if not found:
+                users.append(user_data)
+            _save_json(USERS_FILE, users)
+            return user_data

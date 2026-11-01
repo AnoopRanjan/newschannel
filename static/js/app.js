@@ -16,6 +16,7 @@ class BharatStreamApp {
     this.categories = Array.isArray(window.BHARAT_CATEGORIES) ? [...window.BHARAT_CATEGORIES] : [];
     this.headlines = [];
     this.ads = Array.isArray(window.BHARAT_ADS) ? [...window.BHARAT_ADS] : [];
+    this.newspaperVideos = Array.isArray(window.BHARAT_NEWSPAPER_VIDEOS) ? [...window.BHARAT_NEWSPAPER_VIDEOS] : [];
     this.favourites = new Set();
     this.selectedRegionalLanguage = 'Hindi';
     this.selectedCategory = 'All';
@@ -67,6 +68,7 @@ class BharatStreamApp {
         this.fetchAds(),
         this.fetchNewsTicker(),
         this.fetchHeadlines(),
+        this.fetchNewspaperVideos(),
         this.syncFavourites()
       ]);
     } catch (e) {
@@ -121,7 +123,7 @@ class BharatStreamApp {
 
     window.addEventListener('hashchange', () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && ['home', 'india', 'regional', 'international', 'trending', 'categories', 'favourites'].includes(hash)) {
+      if (hash && ['home', 'india', 'regional', 'international', 'trending', 'categories', 'favourites', 'newpaper'].includes(hash)) {
         this.switchTab(hash, false);
       }
     });
@@ -138,6 +140,23 @@ class BharatStreamApp {
       }
     } catch (e) {
       console.warn('Backend fetch note (using pre-loaded channel library):', e);
+    }
+  }
+
+  async fetchNewspaperVideos() {
+    try {
+      const res = await fetch('/api/news/newspaper/videos');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          this.newspaperVideos = data;
+          if (this.activeTab === 'newpaper') {
+            this.renderActiveView();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Backend fetch newspaper note:', e);
     }
   }
 
@@ -353,6 +372,9 @@ class BharatStreamApp {
       case 'categories':
         this.renderCategoriesView(mainView);
         break;
+      case 'newpaper':
+        this.renderNewPaperView(mainView);
+        break;
       case 'favourites':
         this.renderFavouritesView(mainView);
         break;
@@ -472,7 +494,33 @@ class BharatStreamApp {
         exploreTab: 'international'
       })}
 
-      <!-- 8. Real-time Wire Headlines Reel -->
+      <!-- 8. NewPaper: Latest DLF News YouTube Bulletins (Newest on Top) -->
+      ${this.createMovieShelfHTML({
+        title: '📰 NewPaper: Latest DLF News YouTube Bulletins (Newest on Top)',
+        subtitle: 'Daily video newspaper headlines & updates from DLF News YouTube channel (Newest First)',
+        sliderId: 'sliderNewPaper',
+        itemsHTML: this.newspaperVideos.map((v, idx) => `
+          <div class="cinema-card" style="background-image: url('${v.thumbnail_url || `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg`}');" onclick="window.appState.playNewspaperVideo(${v.id})">
+            <div class="card-scrim-overlay"></div>
+            <div class="card-top-badges">
+              <span class="live-badge" style="background: rgba(229, 9, 20, 0.25); color: #fff; border-color: #e50914;">
+                ${idx === 0 ? '★ NEWEST' : 'DLF NEWS'}
+              </span>
+              <span style="font-size: 0.72rem; color: var(--gold-accent); font-weight: 700;">${v.published_label || 'Today'}</span>
+            </div>
+            <div class="card-bottom-content">
+              <div class="card-channel-name" title="${v.title}">${v.title}</div>
+              <div class="card-quick-actions">
+                <span class="card-lang-pill">NewPaper</span>
+                <button class="btn-card-play" title="Play Video">▶</button>
+              </div>
+            </div>
+          </div>
+        `).join(''),
+        exploreTab: 'newpaper'
+      })}
+
+      <!-- 9. Real-time Wire Headlines Reel -->
       <div class="movie-shelf" style="margin-top: 16px;">
         <div class="shelf-header">
           <h2 class="shelf-title">
@@ -810,6 +858,216 @@ class BharatStreamApp {
   selectCategory(cat) {
     this.selectedCategory = cat;
     this.renderCategoriesView(document.getElementById('mainContentView'));
+  }
+
+  /* ================= NEWPAPER VIEW (DLF News YouTube Video List - Newest on Top) ================= */
+  renderNewPaperView(container) {
+    // Sort so newest video is guaranteed on top
+    const videos = [...this.newspaperVideos].sort((a, b) => 
+      new Date(b.published_at || 0) - new Date(a.published_at || 0)
+    );
+
+    container.innerHTML = `
+      <div class="section-header" style="margin-bottom: 24px; align-items: flex-start; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span class="live-badge" style="background: rgba(229, 9, 20, 0.25); color: #fff; border-color: #e50914;">
+              DLF NEWS YOUTUBE
+            </span>
+            <span style="font-size: 0.8rem; color: var(--gold-accent); font-weight: 700;">★ NEWEST VIDEO ON TOP</span>
+          </div>
+          <h1 class="shelf-title" style="font-size: 1.8rem;">
+            <span class="shelf-accent">|</span> 📰 NewPaper - DLF News Channel Video Feed
+          </h1>
+          <div style="font-size: 0.92rem; color: var(--text-muted); margin-top: 4px;">
+            Daily video newspaper bulletins, government schemes, weather and top headlines from DLF News YouTube channel
+          </div>
+        </div>
+        <div>
+          <button class="btn-primary" onclick="window.appState.toggleAddVideoPanel()">
+            ➕ Add DLF Video from YouTube
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Video Form Panel -->
+      <div id="newpaperAddPanel" class="newpaper-add-panel" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff;">
+            ➕ Add Video of DLF News Channel from YouTube (Kept on Top)
+          </h3>
+          <button onclick="window.appState.toggleAddVideoPanel()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+        <div class="newpaper-form-grid">
+          <div>
+            <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px; font-weight: 600;">YouTube Video URL or Video ID</label>
+            <input type="text" id="newpaperInputUrl" class="search-input" placeholder="e.g. https://www.youtube.com/watch?v=... or Video ID" style="border-radius: 8px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px; font-weight: 600;">Video Title / Edition (Optional)</label>
+            <input type="text" id="newpaperInputTitle" class="search-input" placeholder="e.g. DLF News: आज के मुख्य समाचार" style="border-radius: 8px;">
+          </div>
+          <div>
+            <button class="btn-primary" style="width: 100%; justify-content: center; padding: 10px 16px;" onclick="window.appState.submitNewVideo()">
+              Add to Top 🚀
+            </button>
+          </div>
+        </div>
+        <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 8px;">
+          💡 Enter any YouTube video link from DLF News. The newly added video is automatically pinned at the very top of this NewPaper list.
+        </div>
+      </div>
+
+      <!-- NewPaper Video List Feed (Newest on Top) -->
+      <div class="newpaper-feed-list">
+        ${videos.length > 0 ? videos.map((v, idx) => `
+          <div class="newpaper-card ${idx === 0 ? 'newest-highlight' : ''}">
+            <div class="newpaper-thumb-wrap" style="background-image: url('${v.thumbnail_url || `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg`}');" onclick="window.appState.playNewspaperVideo(${v.id})">
+              <div class="newpaper-thumb-play">▶</div>
+              <span class="newpaper-duration-badge">${v.duration || 'Daily Edition'}</span>
+            </div>
+
+            <div class="newpaper-content">
+              <div class="newpaper-badges-row">
+                ${idx === 0 ? '<span class="newpaper-newest-badge">★ NEWEST ON TOP</span>' : ''}
+                <span class="newpaper-channel-badge">📺 ${v.channel_name || 'DLF News'}</span>
+                <span class="newpaper-date-badge">📅 ${v.published_label || 'Recent Update'}</span>
+                <span class="newpaper-date-badge">👁 ${v.views || 'Verified'}</span>
+              </div>
+
+              <div class="newpaper-title" onclick="window.appState.playNewspaperVideo(${v.id})">
+                ${v.title}
+              </div>
+
+              <p class="newpaper-desc">
+                ${v.description || 'Watch DLF News daily newspaper video bulletin and breaking headlines from YouTube.'}
+              </p>
+
+              <div class="newpaper-actions">
+                <button class="btn-primary" style="padding: 7px 18px; font-size: 0.85rem;" onclick="window.appState.playNewspaperVideo(${v.id})">
+                  ▶ Watch Video
+                </button>
+                <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" rel="noopener noreferrer" class="btn-outline" style="padding: 7px 16px; font-size: 0.82rem;">
+                  🔴 YouTube ↗
+                </a>
+                <button class="btn-outline" style="padding: 7px 12px; font-size: 0.82rem; color: #ef4444; border-color: rgba(239,68,68,0.3);" title="Delete Video" onclick="window.appState.deleteNewspaperVideo(${v.id})">
+                  🗑
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('') : `
+          <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-lg); padding: 50px 20px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 12px;">📰</div>
+            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">No Videos in NewPaper List</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 18px;">Click "Add DLF Video from YouTube" to add your first newspaper video.</p>
+            <button class="btn-primary" onclick="window.appState.toggleAddVideoPanel()">➕ Add DLF Video Now</button>
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  playNewspaperVideo(id) {
+    const v = this.newspaperVideos.find(item => item.id === parseInt(id));
+    if (!v || !window.playerManager) return;
+    const streamObj = {
+      id: 90000 + v.id,
+      channel_name: v.title,
+      language: 'Hindi',
+      country: 'India',
+      category: 'NewPaper - DLF News',
+      stream_type: 'youtube_live',
+      video_id: v.video_id,
+      authorized_embed_url: `https://www.youtube-nocookie.com/embed/${v.video_id}?autoplay=1&rel=0&modestbranding=1`,
+      official_youtube_channel: 'https://www.youtube.com/@DLSNews',
+      description: v.description,
+      verification_status: 'healthy'
+    };
+    window.playerManager.playChannel(streamObj);
+  }
+
+  toggleAddVideoPanel() {
+    const panel = document.getElementById('newpaperAddPanel');
+    if (panel) {
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      if (panel.style.display === 'block') {
+        const input = document.getElementById('newpaperInputUrl');
+        if (input) input.focus();
+      }
+    }
+  }
+
+  async submitNewVideo() {
+    const urlInput = document.getElementById('newpaperInputUrl');
+    const titleInput = document.getElementById('newpaperInputTitle');
+    if (!urlInput || !urlInput.value.trim()) {
+      alert('Please enter a YouTube video URL or Video ID');
+      return;
+    }
+
+    const rawInput = urlInput.value.trim();
+    // Extract video ID
+    let vId = rawInput;
+    const match = rawInput.match(/(?:v=|\/embed\/|\/live\/|\/v\/|youtu\.be\/)([0-9A-Za-z_-]{11})/);
+    if (match) {
+      vId = match[1];
+    }
+
+    const payload = {
+      video_url_or_id: vId,
+      title: titleInput && titleInput.value.trim() ? titleInput.value.trim() : null
+    };
+
+    try {
+      const res = await fetch('/api/news/newspaper/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        // Insert at index 0 so newest video is on top
+        this.newspaperVideos.unshift(created);
+        this.renderActiveView();
+        alert('DLF News Video successfully added to the top of NewPaper feed!');
+      } else {
+        alert('Could not save to backend. Adding locally to top of list.');
+        this.addLocalNewspaperVideo(vId, payload.title);
+      }
+    } catch (e) {
+      this.addLocalNewspaperVideo(vId, payload.title);
+    }
+  }
+
+  addLocalNewspaperVideo(vId, title) {
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const localVideo = {
+      id: Date.now(),
+      video_id: vId,
+      title: title || `DLF News: Latest Newspaper Video Bulletin (${nowStr})`,
+      channel_name: 'DLF News',
+      published_at: new Date().toISOString(),
+      published_label: `Today • Added ${nowStr}`,
+      thumbnail_url: `https://img.youtube.com/vi/${vId}/hqdefault.jpg`,
+      duration: 'Daily Bulletin',
+      views: 'New',
+      category: 'Newspaper Bulletin',
+      description: 'DLF News daily video edition covering latest newspaper headlines, schemes, and breaking updates.'
+    };
+    // Insert at index 0 (newest on top)
+    this.newspaperVideos.unshift(localVideo);
+    this.renderActiveView();
+    alert('DLF News Video added to the top of NewPaper list!');
+  }
+
+  async deleteNewspaperVideo(id) {
+    if (!confirm('Remove this video from the NewPaper list?')) return;
+    this.newspaperVideos = this.newspaperVideos.filter(v => v.id !== id);
+    this.renderActiveView();
+    try {
+      await fetch(`/api/news/newspaper/videos/${id}`, { method: 'DELETE' });
+    } catch (e) {}
   }
 
   /* ================= FAVOURITES / WATCHLIST VIEW ================= */

@@ -1,5 +1,29 @@
 [
   {
+    "id": 10,
+    "channel_id": 1,
+    "issue_type": "stream_offline",
+    "comment": "Testing JSON report",
+    "reported_at": "2026-11-01T03:10:25.507247",
+    "is_resolved": false
+  },
+  {
+    "id": 9,
+    "channel_id": 1,
+    "issue_type": "stream_offline",
+    "comment": "Testing JSON report",
+    "reported_at": "2026-11-01T03:02:42.733300",
+    "is_resolved": false
+  },
+  {
+    "id": 8,
+    "channel_id": 1,
+    "issue_type": "stream_offline",
+    "comment": "Testing JSON report",
+    "reported_at": "2026-11-01T02:59:57.231370",
+    "is_resolved": false
+  },
+  {
     "id": 7,
     "channel_id": 1,
     "issue_type": "stream_offline",

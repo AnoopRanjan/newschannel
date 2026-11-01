@@ -1636,3 +1636,58 @@ window.BHARAT_ADS = [
     "estimated_cpm": 3.5
   }
 ];
+
+window.BHARAT_NEWSPAPER_VIDEOS = [
+  {
+    "id": 1,
+    "video_id": "Nq2wYlWFucg",
+    "title": "DLF News: \u0906\u091c \u0915\u0947 \u092e\u0941\u0916\u094d\u092f \u0938\u092e\u093e\u091a\u093e\u0930 | Today Breaking News & Daily Newspaper Headlines",
+    "channel_name": "DLF News",
+    "published_at": "2026-10-31T18:00:00Z",
+    "published_label": "Yesterday \u2022 Evening Edition",
+    "thumbnail_url": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop",
+    "duration": "14:35",
+    "views": "1.4M views",
+    "category": "Newspaper Bulletin",
+    "description": "DLF News daily morning newspaper roundup covering today's top national developments, economic updates, weather and public advisories."
+  },
+  {
+    "id": 2,
+    "video_id": "sKvb8rWnBv8",
+    "title": "DLF News: 100 \u092c\u0921\u093c\u0940 \u0916\u092c\u0930\u0947\u0902 \u092b\u091f\u093e\u092b\u091f | 100 Big Breaking Newspaper Updates",
+    "channel_name": "DLF News",
+    "published_at": "2026-10-31T10:00:00Z",
+    "published_label": "Yesterday \u2022 Morning Roundup",
+    "thumbnail_url": "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop",
+    "duration": "18:22",
+    "views": "980K views",
+    "category": "Newspaper Bulletin",
+    "description": "DLF News fast 100 newspaper headlines roundup covering states, finance, market indicators, and policy changes."
+  },
+  {
+    "id": 3,
+    "video_id": "2UxbE8q0bEQ",
+    "title": "DLF News: \u0926\u0947\u0936 \u0926\u0941\u0928\u093f\u092f\u093e \u0915\u0947 \u092e\u0941\u0916\u094d\u092f \u0938\u092e\u093e\u091a\u093e\u0930 | National & Global Press Briefing",
+    "channel_name": "DLF News",
+    "published_at": "2026-10-30T16:00:00Z",
+    "published_label": "2 Days Ago \u2022 Afternoon Edition",
+    "thumbnail_url": "https://images.unsplash.com/photo-1526470608268-f674ce90ebd4?w=800&auto=format&fit=crop",
+    "duration": "12:45",
+    "views": "750K views",
+    "category": "Newspaper Bulletin",
+    "description": "DLF News comprehensive daily newspaper briefing, key announcements, weather reports and public updates."
+  },
+  {
+    "id": 4,
+    "video_id": "c1u1A5aE87w",
+    "title": "DLF News: \u0906\u091c \u0915\u0940 \u092c\u0921\u093c\u0940 \u0918\u094b\u0937\u0923\u093e\u090f\u0902 | New Government Schemes & Important Rules Update",
+    "channel_name": "DLF News",
+    "published_at": "2026-10-30T08:00:00Z",
+    "published_label": "2 Days Ago \u2022 Morning Edition",
+    "thumbnail_url": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop",
+    "duration": "16:10",
+    "views": "1.1M views",
+    "category": "Newspaper Bulletin",
+    "description": "DLF News analytical newspaper breakdown of newly implemented civic rules, LPG cylinder updates, bank guidelines, and citizen welfare measures."
+  }
+];

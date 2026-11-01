@@ -104,6 +104,62 @@ INITIAL_ADS = [
     }
 ]
 
+# DLF News / Daily Newspaper YouTube Video Bulletins (Newest on Top)
+INITIAL_NEWSPAPER_VIDEOS = [
+    {
+        "id": 1,
+        "video_id": "Nq2wYlWFucg",
+        "title": "DLF News: आज के मुख्य समाचार | Today Breaking News & Daily Newspaper Headlines",
+        "channel_name": "DLF News",
+        "published_at": "2026-10-31T18:00:00Z",
+        "published_label": "Yesterday • Evening Edition",
+        "thumbnail_url": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop",
+        "duration": "14:35",
+        "views": "1.4M views",
+        "category": "Newspaper Bulletin",
+        "description": "DLF News daily morning newspaper roundup covering today's top national developments, economic updates, weather and public advisories."
+    },
+    {
+        "id": 2,
+        "video_id": "sKvb8rWnBv8",
+        "title": "DLF News: 100 बड़ी खबरें फटाफट | 100 Big Breaking Newspaper Updates",
+        "channel_name": "DLF News",
+        "published_at": "2026-10-31T10:00:00Z",
+        "published_label": "Yesterday • Morning Roundup",
+        "thumbnail_url": "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop",
+        "duration": "18:22",
+        "views": "980K views",
+        "category": "Newspaper Bulletin",
+        "description": "DLF News fast 100 newspaper headlines roundup covering states, finance, market indicators, and policy changes."
+    },
+    {
+        "id": 3,
+        "video_id": "2UxbE8q0bEQ",
+        "title": "DLF News: देश दुनिया के मुख्य समाचार | National & Global Press Briefing",
+        "channel_name": "DLF News",
+        "published_at": "2026-10-30T16:00:00Z",
+        "published_label": "2 Days Ago • Afternoon Edition",
+        "thumbnail_url": "https://images.unsplash.com/photo-1526470608268-f674ce90ebd4?w=800&auto=format&fit=crop",
+        "duration": "12:45",
+        "views": "750K views",
+        "category": "Newspaper Bulletin",
+        "description": "DLF News comprehensive daily newspaper briefing, key announcements, weather reports and public updates."
+    },
+    {
+        "id": 4,
+        "video_id": "c1u1A5aE87w",
+        "title": "DLF News: आज की बड़ी घोषणाएं | New Government Schemes & Important Rules Update",
+        "channel_name": "DLF News",
+        "published_at": "2026-10-30T08:00:00Z",
+        "published_label": "2 Days Ago • Morning Edition",
+        "thumbnail_url": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop",
+        "duration": "16:10",
+        "views": "1.1M views",
+        "category": "Newspaper Bulletin",
+        "description": "DLF News analytical newspaper breakdown of newly implemented civic rules, LPG cylinder updates, bank guidelines, and citizen welfare measures."
+    }
+]
+
 # Curated, verified 51 news broadcasters with cinematic backdrops & YouTube live embeds
 INITIAL_CHANNELS = [
     # ------------------ INDIA NATIONAL NEWS ------------------
@@ -1460,6 +1516,18 @@ INITIAL_CHANNELS = [
     }
 ]
 
+INITIAL_USERS = [
+    {
+        "email": "anoopranjan.1983@gmail.com",
+        "name": "Anoop Ranjan",
+        "picture": "https://api.dicebear.com/7.x/initials/svg?seed=Anoop%20Ranjan&backgroundColor=e50914,0f172a",
+        "session_token": "primary_owner_token",
+        "is_google_sso": True,
+        "adsense_linked": True,
+        "adsense_publisher_id": "ca-pub-9847120394857102"
+    }
+]
+
 def init_json_data():
     now = datetime.utcnow().isoformat()
     for ch in INITIAL_CHANNELS:
@@ -1468,7 +1536,9 @@ def init_json_data():
     JsonDatabase.save_channels(INITIAL_CHANNELS)
     JsonDatabase.save_categories(INITIAL_CATEGORIES)
     JsonDatabase.save_ads(INITIAL_ADS)
-    print("Seeded channels, categories, and ads with cinema-grade metadata into JSON database.")
+    JsonDatabase.save_newspaper_videos(INITIAL_NEWSPAPER_VIDEOS)
+    JsonDatabase.save_users(INITIAL_USERS)
+    print("Seeded channels, categories, ads, DLF NewPaper videos, and Google SSO user into JSON database.")
 
 if __name__ == "__main__":
     init_json_data()

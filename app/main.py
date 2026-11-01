@@ -78,6 +78,17 @@ app.include_router(news.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(admin.router, prefix=settings.API_PREFIX)
 
+@app.get("/api/newspaper/videos", tags=["NewPaper"])
+def alias_get_newspaper():
+    from app.json_db import JsonDatabase
+    return JsonDatabase.get_newspaper_videos()
+
+@app.post("/api/newspaper/videos", tags=["NewPaper"])
+def alias_post_newspaper(payload: dict):
+    from app.routers.news import NewspaperVideoCreate, add_newspaper_video
+    obj = NewspaperVideoCreate(**payload)
+    return add_newspaper_video(obj)
+
 # Ensure static directories exist
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 if not os.path.exists(STATIC_DIR):
