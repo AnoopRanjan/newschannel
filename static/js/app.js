@@ -12,10 +12,10 @@
 class BharatStreamApp {
   constructor() {
     this.activeTab = 'home';
-    this.allChannels = [];
-    this.categories = [];
+    this.allChannels = Array.isArray(window.BHARAT_CHANNELS) ? [...window.BHARAT_CHANNELS] : [];
+    this.categories = Array.isArray(window.BHARAT_CATEGORIES) ? [...window.BHARAT_CATEGORIES] : [];
     this.headlines = [];
-    this.ads = [];
+    this.ads = Array.isArray(window.BHARAT_ADS) ? [...window.BHARAT_ADS] : [];
     this.favourites = new Set();
     this.selectedRegionalLanguage = 'Hindi';
     this.selectedCategory = 'All';
@@ -53,14 +53,25 @@ class BharatStreamApp {
     this.loadSavedPreferences();
     this.bindDOMEvents();
 
-    await Promise.all([
-      this.fetchChannels(),
-      this.fetchCategories(),
-      this.fetchAds(),
-      this.fetchNewsTicker(),
-      this.fetchHeadlines(),
-      this.syncFavourites()
-    ]);
+    // 1. Immediately render channels (Zero loading lag, zero blank screens)
+    if (this.allChannels.length > 0) {
+      this.renderActiveView();
+      this.renderAdPlacements();
+    }
+
+    // 2. Fetch latest updates from Python backend in background
+    try {
+      await Promise.allSettled([
+        this.fetchChannels(),
+        this.fetchCategories(),
+        this.fetchAds(),
+        this.fetchNewsTicker(),
+        this.fetchHeadlines(),
+        this.syncFavourites()
+      ]);
+    } catch (e) {
+      console.warn('Background sync note:', e);
+    }
 
     this.renderActiveView();
     this.checkDeepLinkParams();
@@ -120,10 +131,13 @@ class BharatStreamApp {
     try {
       const res = await fetch('/api/channels');
       if (res.ok) {
-        this.allChannels = await res.json();
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          this.allChannels = data;
+        }
       }
     } catch (e) {
-      console.error('Failed to load channels:', e);
+      console.warn('Backend fetch note (using pre-loaded channel library):', e);
     }
   }
 
@@ -966,6 +980,6 @@ class BharatStreamApp {
 
 // Global initialization
 document.addEventListener('DOMContentLoaded', () => {
-  window.appState = new BharatStreamApp();
   window.playerManager = new StreamPlayerManager();
+  window.appState = new BharatStreamApp();
 });

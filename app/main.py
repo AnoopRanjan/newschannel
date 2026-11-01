@@ -80,10 +80,17 @@ app.include_router(admin.router, prefix=settings.API_PREFIX)
 
 # Ensure static directories exist
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-os.makedirs(STATIC_DIR, exist_ok=True)
-os.makedirs(os.path.join(STATIC_DIR, "css"), exist_ok=True)
-os.makedirs(os.path.join(STATIC_DIR, "js"), exist_ok=True)
-os.makedirs(os.path.join(STATIC_DIR, "img"), exist_ok=True)
+if not os.path.exists(STATIC_DIR):
+    alt_dir = os.path.join(os.getcwd(), "static")
+    if os.path.exists(alt_dir):
+        STATIC_DIR = alt_dir
+try:
+    os.makedirs(STATIC_DIR, exist_ok=True)
+    os.makedirs(os.path.join(STATIC_DIR, "css"), exist_ok=True)
+    os.makedirs(os.path.join(STATIC_DIR, "js"), exist_ok=True)
+    os.makedirs(os.path.join(STATIC_DIR, "img"), exist_ok=True)
+except Exception:
+    pass
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

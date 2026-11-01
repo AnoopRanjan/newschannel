@@ -136,14 +136,18 @@ class StreamPlayerManager {
     const embedUrl = channel.authorized_embed_url;
 
     // 1. YouTube Live Stream
-    if (streamType === 'youtube_live') {
+    if (streamType === 'youtube_live' || (!streamType && (videoId || chId || embedUrl))) {
       let src = '';
-      if (videoId) {
+      if (embedUrl && embedUrl.includes('youtube')) {
+        src = embedUrl;
+      } else if (videoId && !videoId.includes('-live')) {
         src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1`;
       } else if (chId) {
         src = `https://www.youtube-nocookie.com/embed/live_stream?channel=${chId}&autoplay=1`;
       } else if (embedUrl) {
         src = embedUrl;
+      } else if (videoId) {
+        src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1`;
       }
 
       if (src) {

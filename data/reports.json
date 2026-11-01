@@ -1,5 +1,21 @@
 [
   {
+    "id": 7,
+    "channel_id": 1,
+    "issue_type": "stream_offline",
+    "comment": "Testing JSON report",
+    "reported_at": "2026-11-01T02:36:30.891719",
+    "is_resolved": false
+  },
+  {
+    "id": 6,
+    "channel_id": 1,
+    "issue_type": "stream_offline",
+    "comment": "Testing JSON report",
+    "reported_at": "2026-11-01T02:35:15.804297",
+    "is_resolved": false
+  },
+  {
     "id": 5,
     "channel_id": 1,
     "issue_type": "stream_offline",

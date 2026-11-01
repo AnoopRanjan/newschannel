@@ -4,7 +4,10 @@ import threading
 from typing import Dict, List, Any, Optional
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-os.makedirs(DATA_DIR, exist_ok=True)
+try:
+    os.makedirs(DATA_DIR, exist_ok=True)
+except Exception:
+    pass
 
 CHANNELS_FILE = os.path.join(DATA_DIR, "channels.json")
 CATEGORIES_FILE = os.path.join(DATA_DIR, "categories.json")
@@ -55,7 +58,15 @@ class JsonDatabase:
     @staticmethod
     def get_channels() -> List[Dict[str, Any]]:
         with _lock:
-            return _load_json(CHANNELS_FILE, [])
+            channels = _load_json(CHANNELS_FILE, None)
+            if not channels:
+                try:
+                    from app.seed_json import INITIAL_CHANNELS
+                    channels = [dict(c) for c in INITIAL_CHANNELS]
+                    _save_json(CHANNELS_FILE, channels)
+                except Exception:
+                    channels = []
+            return channels
 
     @staticmethod
     def save_channels(channels: List[Dict[str, Any]]):
@@ -65,7 +76,15 @@ class JsonDatabase:
     @staticmethod
     def get_categories() -> List[Dict[str, Any]]:
         with _lock:
-            return _load_json(CATEGORIES_FILE, [])
+            categories = _load_json(CATEGORIES_FILE, None)
+            if not categories:
+                try:
+                    from app.seed_json import INITIAL_CATEGORIES
+                    categories = [dict(c) for c in INITIAL_CATEGORIES]
+                    _save_json(CATEGORIES_FILE, categories)
+                except Exception:
+                    categories = []
+            return categories
 
     @staticmethod
     def save_categories(categories: List[Dict[str, Any]]):
@@ -75,7 +94,15 @@ class JsonDatabase:
     @staticmethod
     def get_ads() -> List[Dict[str, Any]]:
         with _lock:
-            return _load_json(ADS_FILE, [])
+            ads = _load_json(ADS_FILE, None)
+            if not ads:
+                try:
+                    from app.seed_json import INITIAL_ADS
+                    ads = [dict(a) for a in INITIAL_ADS]
+                    _save_json(ADS_FILE, ads)
+                except Exception:
+                    ads = []
+            return ads
 
     @staticmethod
     def save_ads(ads: List[Dict[str, Any]]):
