@@ -1,43 +1,32 @@
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import settings
-from app.database import engine, Base, SessionLocal
-from app.seed_data import seed_database
+from app.seed_json import init_json_data
 from app.verifier import run_stream_verification
 from app.routers import channels, news, users, admin
 
 logger = logging.getLogger("main")
 logging.basicConfig(level=logging.INFO)
 
-# Initialize database tables
-Base.metadata.create_all(bind=engine)
-
-# Seed database if not populated
-db = SessionLocal()
-try:
-    seed_database(db)
-finally:
-    db.close()
+# Seed JSON data if not already present
+init_json_data()
 
 scheduler = AsyncIOScheduler()
 
 async def scheduled_verifier_task():
     logger.info("Running scheduled stream verification...")
-    db_session = SessionLocal()
     try:
-        await run_stream_verification(db=db_session)
+        await run_stream_verification()
         logger.info("Scheduled stream verification completed successfully.")
     except Exception as e:
         logger.error(f"Scheduled stream verification failed: {e}")
-    finally:
-        db_session.close()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -74,7 +63,7 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# Enable CORS for cross-origin or local testing
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -103,6 +92,7 @@ def health_check():
     return {
         "status": "online",
         "service": settings.PROJECT_NAME,
+        "storage": "JSON File Storage",
         "version": settings.VERSION
     }
 

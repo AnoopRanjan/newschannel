@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BharatStream - India Live News & Global News Streaming Platform</title>
-  <meta name="description" content="Watch officially available free live news streams from Indian national, regional, and international English broadcasters legally without subscription.">
+  <meta name="description" content="Watch officially available free live news streams from Indian national, regional (12 languages), and international English broadcasters legally without subscription.">
   <link rel="icon" href="/static/img/default-tv.svg" type="image/svg+xml">
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,10 +20,10 @@
   <!-- Top Certified Broadcast Notice Bar -->
   <div class="top-notice-bar">
     <div>
-      <span>⚖️ <strong>100% Legal & Free Live Streams</strong>: Sourced exclusively from official broadcasters & authorized public feeds. No unauthorized IPTV or piracy.</span>
+      <span>⚖️ <strong>100% Legal & Free Live Streams</strong>: Sourced exclusively from official broadcaster YouTube channels & authorized public feeds. Zero unauthorized IPTV.</span>
     </div>
     <div>
-      <a href="/admin">Admin Dashboard ↗</a>
+      <a href="/admin">⚙️ Admin & Monetization Dashboard ↗</a>
     </div>
   </div>
 
@@ -37,7 +37,7 @@
 
       <div class="search-bar-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" id="globalSearchInput" class="search-input" placeholder="Search channels by name, language, or topic (e.g. DD News, Tamil, Business)...">
+        <input type="text" id="globalSearchInput" class="search-input" placeholder="Search 50+ channels by name, language, or topic (e.g. DD News, Tamil, Business)...">
       </div>
 
       <div class="nav-actions">
@@ -83,7 +83,7 @@
   <div class="breaking-ticker">
     <div class="ticker-badge">
       <span class="live-dot"></span>
-      BREAKING
+      BREAKING NEWS
     </div>
     <div class="ticker-content-track" id="tickerTrack">
       <span class="ticker-item">Loading real-time news dispatches from verified press bureaus...</span>
@@ -93,7 +93,7 @@
   <!-- Main App Container -->
   <main class="app-container">
     
-    <!-- Top Responsive Ad Placement Slot -->
+    <!-- 1. Header Leaderboard Ad Placement -->
     <div id="topAdPlacement" class="ad-slot-container" style="display: none;"></div>
 
     <!-- Resume Watching Prompt (if user watched channel previously) -->
@@ -105,6 +105,9 @@
     </section>
 
   </main>
+
+  <!-- 2. Sticky Floating Bottom Bar Ad -->
+  <div id="stickyFooterAd" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; display: none;"></div>
 
   <!-- Streaming Video Player Modal Dialog -->
   <div id="playerModal" class="player-modal">
@@ -121,6 +124,7 @@
 
         <div class="player-actions">
           <button id="playerFavBtn" class="icon-btn" title="Toggle Favourite">🤍</button>
+          <button id="popoutPlayerBtn" class="icon-btn" title="Pop-out Window Player">🗗</button>
           <button id="theatreModeBtn" class="icon-btn" title="Toggle Theatre Mode (T)">🗖</button>
           <button id="fullscreenBtn" class="icon-btn" title="Toggle Fullscreen (F)">⛶</button>
           <button id="shareStreamBtn" class="icon-btn" title="Share Channel Link">🔗</button>
@@ -136,14 +140,11 @@
             <!-- Iframe / Video element injected dynamically -->
           </div>
 
-          <!-- Non-Intrusive Below-Player Ad Slot -->
-          <div class="ad-slot-container" style="margin-top: 14px; padding: 6px 12px; background: rgba(15,23,42,0.6);">
-            <div class="ad-slot-label">SPONSORED BROADCAST SUPPORTER</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
-              <span>100% Free & Licensed News Broadcasts across India and Global Networks</span>
-              <a href="https://prasarbharati.gov.in" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; font-size: 0.78rem;">Learn More ↗</a>
-            </div>
-          </div>
+          <!-- Live Source Switcher Bar -->
+          <div id="streamSourceSwitcher"></div>
+
+          <!-- 3. Below-Player Display Banner Ad Slot -->
+          <div id="playerBelowAdContainer" class="ad-slot-container" style="display: none; margin-top: 14px;"></div>
 
           <!-- Channel Details -->
           <div class="stream-details-bar">
@@ -154,12 +155,14 @@
           </div>
         </div>
 
-        <!-- Sidebar (Related Channels / Quick Switcher) -->
+        <!-- Sidebar (Related Channels & 4. Sidebar Ad Slot) -->
         <aside class="player-sidebar">
           <div class="sidebar-header">📺 More Live News Channels</div>
           <div id="relatedChannelsList" class="related-channel-list">
             <!-- Injected by player.js -->
           </div>
+          <!-- 4. Sidebar Ad Slot -->
+          <div id="playerSidebarAdContainer" style="display: none; padding: 12px; border-top: 1px solid var(--border-color);"></div>
         </aside>
       </div>
     </div>
@@ -201,7 +204,7 @@
       <div class="footer-col">
         <h4>Platform & Admin</h4>
         <ul>
-          <li><a href="/admin">Admin Dashboard</a></li>
+          <li><a href="/admin">Earning & Admin Dashboard</a></li>
           <li><a href="/api/docs" target="_blank">FastAPI Documentation</a></li>
           <li><a href="/health" target="_blank">System Health Check</a></li>
         </ul>
@@ -209,7 +212,7 @@
     </div>
 
     <div class="footer-bottom">
-      © 2026 BharatStream. Built with Python 3.12, FastAPI, SQLAlchemy, and modern web streaming APIs. All broadcaster logos & trade marks belong to their respective copyright owners.
+      © 2026 BharatStream. Powered by Python 3.12, JSON Database Engine & Web Streaming APIs. All broadcaster logos & trade marks belong to their respective copyright owners.
     </div>
   </footer>
 

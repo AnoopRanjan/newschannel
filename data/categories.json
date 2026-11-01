@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "category_name": "National",
+    "slug": "national",
+    "icon": "flag",
+    "description": "National news coverage from India's premier public and private broadcasters."
+  },
+  {
+    "id": 2,
+    "category_name": "Regional",
+    "slug": "regional",
+    "icon": "map-pin",
+    "description": "Regional news in 12 major Indian languages from grassroots bureaus."
+  },
+  {
+    "id": 3,
+    "category_name": "International",
+    "slug": "international",
+    "icon": "globe",
+    "description": "Global news perspectives in English from verified international networks."
+  },
+  {
+    "id": 4,
+    "category_name": "Business",
+    "slug": "business",
+    "icon": "trending-up",
+    "description": "Markets, corporate developments, Union Budget, and economic analysis."
+  },
+  {
+    "id": 5,
+    "category_name": "Parliament",
+    "slug": "parliament",
+    "icon": "landmark",
+    "description": "Official parliamentary proceedings, legislative debates, and statecraft."
+  },
+  {
+    "id": 6,
+    "category_name": "Tech & Science",
+    "slug": "tech-science",
+    "icon": "cpu",
+    "description": "Space exploration, artificial intelligence, and scientific research."
+  }
+]

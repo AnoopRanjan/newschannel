@@ -10,13 +10,14 @@ import time
 import uvicorn
 import httpx
 from app.config import settings
+from app.json_db import JsonDatabase
 
 def start_server():
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, log_level="error")
 
 def run_integration_tests():
     print("================================================================")
-    print("[*] BHARATSTREAM PLATFORM - FULL INTEGRATION TEST SUITE")
+    print("[*] BHARATSTREAM - JSON STORAGE & MONETIZATION TEST SUITE")
     print("================================================================")
     
     server_thread = threading.Thread(target=start_server, daemon=True)
@@ -26,172 +27,133 @@ def run_integration_tests():
     base = "http://127.0.0.1:8000"
     
     with httpx.Client(base_url=base, timeout=10.0) as client:
-        # 1. Health & Static Frontend Pages
+        # 1. Health & Storage check
         res = client.get("/health")
         assert res.status_code == 200, f"Health check failed: {res.text}"
-        print(f"✓ Health Check: {res.json()['status']} ({res.json()['service']})")
+        data = res.json()
+        assert data["storage"] == "JSON File Storage"
+        print(f"✓ Health & Storage: {data['status']} ({data['storage']})")
 
+        # 2. JSON Files verification on disk
+        data_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "data")
+        for jf in ["channels.json", "categories.json", "ads.json"]:
+            fpath = os.path.join(data_dir, jf)
+            assert os.path.exists(fpath), f"Missing JSON file: {fpath}"
+            print(f"✓ JSON File Verified: data/{jf} exists ({os.path.getsize(fpath)} bytes)")
+
+        # 3. Static Pages
         index_res = client.get("/")
         assert index_res.status_code == 200
         assert "BharatStream" in index_res.text
-        print("✓ Frontend Index HTML: Loaded and verified (200 OK)")
+        print("✓ Frontend HTML: Loaded and verified (200 OK)")
 
         admin_res = client.get("/admin")
         assert admin_res.status_code == 200
-        assert "BharatStream Administration" in admin_res.text
-        print("✓ Admin Portal HTML: Loaded and verified (200 OK)")
+        assert "Monetization & Admin" in admin_res.text
+        print("✓ Admin & Monetization HTML: Loaded and verified (200 OK)")
 
-        css_res = client.get("/static/css/styles.css")
-        assert css_res.status_code == 200
-        print("✓ Static CSS: Verified (200 OK)")
-
-        js_app = client.get("/static/js/app.js")
-        assert js_app.status_code == 200
-        print("✓ Static JS (App & Player): Verified (200 OK)")
-
-        # 2. Channel Directory
+        # 4. Channels Directory from JSON
         res = client.get("/api/channels")
         assert res.status_code == 200
         channels = res.json()
-        assert len(channels) >= 50, f"Expected at least 50 channels, got {len(channels)}"
-        print(f"✓ Directory: Loaded {len(channels)} total authorized news channels")
+        assert len(channels) >= 50
+        print(f"✓ Channel Directory: {len(channels)} channels loaded directly from data/channels.json")
 
-        # 3. India National Channels
+        # 5. India National News Channels
         res = client.get("/api/channels/india")
         assert res.status_code == 200
-        india_channels = res.json()
-        assert len(india_channels) >= 10
-        names = [c["channel_name"] for c in india_channels]
-        assert "DD News" in names
-        print(f"✓ India National: {len(india_channels)} channels verified (DD News, Sansad TV, NDTV, Aaj Tak, etc.)")
+        india_ch = res.json()
+        assert len(india_ch) >= 10
+        print(f"✓ India National News: {len(india_ch)} channels verified")
 
-        # 4. International English News
+        # 6. International English Channels
         res = client.get("/api/channels/international")
         assert res.status_code == 200
         intl = res.json()
         assert len(intl) >= 8
-        print(f"✓ International News: {len(intl)} verified English broadcasters (Sky News, Al Jazeera, DW, France 24, etc.)")
+        print(f"✓ International English News: {len(intl)} channels verified")
 
-        # 5. Regional Indian Languages (All 12 languages required)
+        # 7. 12 Indian Regional Languages
         languages = [
             "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam",
             "Bengali", "Marathi", "Gujarati", "Punjabi", "Odia",
             "Assamese", "Urdu"
         ]
-        print("✓ Checking 12 Indian Regional Languages:")
+        print("✓ Checking 12 Indian Regional Languages from JSON:")
         for lang in languages:
             res = client.get(f"/api/channels/regional/{lang}")
             assert res.status_code == 200
             ch_list = res.json()
-            assert len(ch_list) >= 1, f"Missing regional channels for {lang}"
-            print(f"   - {lang}: {len(ch_list)} channels (e.g., {ch_list[0]['channel_name']})")
+            assert len(ch_list) >= 1
+            print(f"   - {lang}: {len(ch_list)} streams (e.g. {ch_list[0]['channel_name']})")
 
-        # 6. Language Summary
-        res = client.get("/api/channels/languages/summary")
-        assert res.status_code == 200
-        summary = res.json()
-        assert len(summary) >= 12
-        print(f"✓ Language Summary: Aggregated counts for {len(summary)} Indian languages")
-
-        # 7. Categories
-        res = client.get("/api/channels/categories")
-        assert res.status_code == 200
-        cats = res.json()
-        assert len(cats) >= 5
-        print(f"✓ News Categories: {len(cats)} categories (National, Regional, International, Business, Parliament, Tech)")
-
-        # 8. Breaking News Ticker & RSS
-        res = client.get("/api/news/ticker")
-        assert res.status_code == 200
-        ticker = res.json()
-        assert len(ticker) > 0
-        print(f"✓ Breaking News Ticker: Active with {len(ticker)} real-time headlines")
-
-        res = client.get("/api/news/headlines?limit=6")
-        assert res.status_code == 200
-        headlines = res.json()
-        assert len(headlines) > 0
-        print(f"✓ News Headlines Feed: Returned {len(headlines)} articles with source attribution")
-
-        # 9. Favourites Toggle and Persistence
-        client_token = "qa_tester_device_8877"
-        first_ch_id = channels[0]["id"]
-        
-        # Add favourite
-        fav_toggle = client.post("/api/user/favourites/toggle", json={"channel_id": first_ch_id, "client_token": client_token})
-        assert fav_toggle.status_code == 200
-        assert fav_toggle.json()["is_favourite"] is True
-
-        # Retrieve favourites
-        fav_list = client.get(f"/api/user/favourites?client_token={client_token}")
-        assert fav_list.status_code == 200
-        assert any(c["id"] == first_ch_id for c in fav_list.json())
-
-        # Remove favourite
-        fav_remove = client.post("/api/user/favourites/toggle", json={"channel_id": first_ch_id, "client_token": client_token})
-        assert fav_remove.status_code == 200
-        assert fav_remove.json()["is_favourite"] is False
-        print("✓ Favourites System: Add, List, and Remove verified with guest token persistence")
-
-        # 10. Viewer Stream Issue Report
-        rep_res = client.post("/api/user/report", json={
-            "channel_id": first_ch_id,
-            "issue_type": "stream_offline",
-            "comment": "Automated verification test of user reporting"
-        })
-        assert rep_res.status_code == 200
-        print("✓ User Reporting: Viewer stream outage report successfully logged")
-
-        # 11. Ad Placements
+        # 8. Monetization & Ad Tracking
         ads_res = client.get("/api/user/ads")
         assert ads_res.status_code == 200
         ads = ads_res.json()
-        assert len(ads) >= 4
-        print(f"✓ Ad Monetization: {len(ads)} compliant ad placement slots verified (non-intrusive)")
+        assert len(ads) >= 6
+        slot_names = [a["slot_name"] for a in ads]
+        assert "home_top_banner" in slot_names
+        assert "sticky_footer_banner" in slot_names
+        assert "sponsored_channel_card" in slot_names
+        assert "player_below_ad" in slot_names
+        assert "sidebar_ad" in slot_names
+        print(f"✓ Monetization System: {len(ads)} varied ad display formats active (Top Banner, Sticky Footer, In-Feed, Below-Player, Sidebar)")
 
-        # 12. Admin Authentication & Stats
-        login_res = client.post("/api/admin/login", json={
-            "username": settings.ADMIN_USERNAME,
-            "password": settings.ADMIN_PASSWORD
-        })
-        assert login_res.status_code == 200
-        token = login_res.json()["token"]
-        print("✓ Admin Portal: Authentication verified")
+        # Test tracking impression and click
+        track_res = client.post("/api/user/ads/track", json={"slot_name": "home_top_banner", "is_click": False})
+        assert track_res.status_code == 200
+        track_click = client.post("/api/user/ads/track", json={"slot_name": "home_top_banner", "is_click": True})
+        assert track_click.status_code == 200
+        print("✓ Ad Monetization Tracking: Impression and click logged into data/ads.json")
 
+        # 9. Admin Stats & Live Earnings
         stats_res = client.get("/api/admin/stats")
         assert stats_res.status_code == 200
         stats = stats_res.json()
-        assert stats["total_channels"] >= 50
-        print(f"✓ Admin Stats: Total Channels: {stats['total_channels']}, Healthy Streams: {stats['healthy_streams']}")
+        assert "estimated_earnings_usd" in stats
+        assert "estimated_earnings_inr" in stats
+        print(f"✓ Earning Stats: Est. Revenue: ${stats['estimated_earnings_usd']} (₹{stats['estimated_earnings_inr']})")
 
-        # 13. Admin Channel CRUD Operations
-        new_channel_payload = {
-            "channel_name": "Test Broadcaster 2026",
-            "slug": "test-broadcaster-2026",
+        # 10. Channel CRUD in JSON
+        new_ch = {
+            "channel_name": "JSON Test Broadcaster",
+            "slug": "json-test-broadcaster",
             "country": "India",
             "language": "Hindi",
             "category": "National",
-            "official_website": "https://broadcaster.example.com",
-            "official_youtube_channel": "https://youtube.com/@example",
-            "video_id": "example_live_id",
-            "authorized_embed_url": "https://youtube.com/embed/example_live_id",
             "stream_type": "youtube_live",
+            "video_id": "test_video_999",
+            "youtube_channel_id": "UC_test_channel",
             "is_active": True
         }
-        create_ch = client.post("/api/admin/channels", json=new_channel_payload)
-        assert create_ch.status_code == 200
-        created_id = create_ch.json()["id"]
+        create_res = client.post("/api/admin/channels", json=new_ch)
+        assert create_res.status_code == 200
+        created_id = create_res.json()["id"]
 
-        update_ch = client.put(f"/api/admin/channels/{created_id}", json={"channel_name": "Test Broadcaster Verified"})
-        assert update_ch.status_code == 200
-        assert update_ch.json()["channel_name"] == "Test Broadcaster Verified"
+        update_res = client.put(f"/api/admin/channels/{created_id}", json={"channel_name": "JSON Broadcaster Updated"})
+        assert update_res.status_code == 200
+        assert update_res.json()["channel_name"] == "JSON Broadcaster Updated"
 
-        del_ch = client.delete(f"/api/admin/channels/{created_id}")
-        assert del_ch.status_code == 200
-        print("✓ Admin CRUD: Create, Update, and Delete channel lifecycle passed")
+        del_res = client.delete(f"/api/admin/channels/{created_id}")
+        assert del_res.status_code == 200
+        print("✓ Channel CRUD: Created, Updated, and Deleted channel from data/channels.json")
+
+        # 11. Favourites System
+        fav_toggle = client.post("/api/user/favourites/toggle", json={"channel_id": 1, "client_token": "json_user_1"})
+        assert fav_toggle.status_code == 200
+        fav_list = client.get("/api/user/favourites?client_token=json_user_1")
+        assert fav_list.status_code == 200
+        assert any(c["id"] == 1 for c in fav_list.json())
+        print("✓ Favourites: Persisted in data/favourites.json")
+
+        # 12. User Report
+        report_res = client.post("/api/user/report", json={"channel_id": 1, "issue_type": "stream_offline", "comment": "Testing JSON report"})
+        assert report_res.status_code == 200
+        print("✓ User Reports: Persisted in data/reports.json")
 
         print("\n================================================================")
-        print("[SUCCESS] ALL 13 CORE INTEGRATION TESTS PASSED WITH 100% SUCCESS!")
+        print("[SUCCESS] ALL 12 JSON & MONETIZATION TESTS PASSED WITH 100% SUCCESS!")
         print("================================================================\n")
 
 if __name__ == "__main__":

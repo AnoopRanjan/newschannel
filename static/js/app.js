@@ -1,6 +1,5 @@
 /**
- * BharatStream - Main Application Controller
- * Handles SPA navigation, real-time news ticker, channel directory, favourites, search, and user preferences.
+ * BharatStream - Main Application Controller (JSON Storage & Multi-Earning Ad Engine)
  */
 
 class BharatStreamApp {
@@ -32,7 +31,6 @@ class BharatStreamApp {
     this.loadSavedPreferences();
     this.bindDOMEvents();
     
-    // Load initial data
     await Promise.all([
       this.fetchChannels(),
       this.fetchCategories(),
@@ -65,16 +63,13 @@ class BharatStreamApp {
   }
 
   bindDOMEvents() {
-    // Navigation Tabs
     const tabBtns = document.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        this.switchTab(tab);
+        this.switchTab(btn.dataset.tab);
       });
     });
 
-    // Language Dropdown in Navbar
     const langSelect = document.getElementById('navbarLangSelect');
     if (langSelect) {
       langSelect.addEventListener('change', (e) => {
@@ -84,7 +79,6 @@ class BharatStreamApp {
       });
     }
 
-    // Search Input
     const searchInput = document.getElementById('globalSearchInput');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
@@ -92,7 +86,6 @@ class BharatStreamApp {
       });
     }
 
-    // Hash navigation change
     window.addEventListener('hashchange', () => {
       const hash = window.location.hash.replace('#', '');
       if (hash && ['home', 'india', 'regional', 'international', 'trending', 'categories', 'favourites'].includes(hash)) {
@@ -175,7 +168,6 @@ class BharatStreamApp {
     const track = document.getElementById('tickerTrack');
     if (!track || !items.length) return;
 
-    // Duplicate list for infinite smooth marquee
     const repeated = [...items, ...items];
     track.innerHTML = repeated.map(it => `
       <a class="ticker-item" href="${it.link}" target="_blank" rel="noopener noreferrer">
@@ -186,21 +178,95 @@ class BharatStreamApp {
   }
 
   renderAdPlacements() {
+    // 1. Top Leaderboard Banner
+    const topAd = this.ads.find(a => a.slot_name === 'home_top_banner' && a.is_enabled);
     const topAdContainer = document.getElementById('topAdPlacement');
-    if (topAdContainer && this.ads) {
-      const topAd = this.ads.find(a => a.slot_name === 'home_top_banner' && a.is_enabled);
+    if (topAdContainer) {
       if (topAd) {
         topAdContainer.innerHTML = `
-          <div class="ad-slot-label">SPONSORED PLACEMENT • OFFICIAL PARTNER</div>
-          <a class="ad-banner-link" href="${topAd.target_url || '#'}" target="_blank" rel="noopener noreferrer">
+          <div class="ad-slot-label">${topAd.badge_text || 'SPONSORED PLACEMENT'} • VERIFIED ADVERTISER</div>
+          <a class="ad-banner-link" href="${topAd.target_url || '#'}" target="_blank" rel="noopener noreferrer" onclick="window.appState.trackAdEvent('home_top_banner', true)">
             <img class="ad-banner-img" src="${topAd.image_url}" alt="${topAd.headline || 'Sponsored'}">
           </a>
         `;
         topAdContainer.style.display = 'block';
+        this.trackAdEvent('home_top_banner', false);
       } else {
         topAdContainer.style.display = 'none';
       }
     }
+
+    // 2. Sticky Floating Bottom Bar Ad
+    const footerAd = this.ads.find(a => a.slot_name === 'sticky_footer_banner' && a.is_enabled);
+    const stickyContainer = document.getElementById('stickyFooterAd');
+    if (stickyContainer) {
+      if (footerAd) {
+        stickyContainer.innerHTML = `
+          <div style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); border-top: 1px solid #3b82f6; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 -4px 20px rgba(0,0,0,0.5);">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
+              <span class="live-badge" style="background: #1e3a8a; color: #93c5fd; border-color: #3b82f6; font-size: 0.65rem;">
+                ${footerAd.badge_text || 'PROMOTED'}
+              </span>
+              <strong style="color: #fff; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${footerAd.headline}
+              </strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <a href="${footerAd.target_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 6px 14px; font-size: 0.8rem; background: #2563eb;" onclick="window.appState.trackAdEvent('sticky_footer_banner', true)">
+                Claim Offer ↗
+              </a>
+              <button onclick="document.getElementById('stickyFooterAd').style.display='none'" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; padding: 4px;">✕</button>
+            </div>
+          </div>
+        `;
+        stickyContainer.style.display = 'block';
+        this.trackAdEvent('sticky_footer_banner', false);
+      } else {
+        stickyContainer.style.display = 'none';
+      }
+    }
+
+    // 3. Below-Player Ad
+    const belowAd = this.ads.find(a => a.slot_name === 'player_below_ad' && a.is_enabled);
+    const belowContainer = document.getElementById('playerBelowAdContainer');
+    if (belowContainer) {
+      if (belowAd) {
+        belowContainer.innerHTML = `
+          <div class="ad-slot-label">${belowAd.badge_text || 'SPONSORED BROADCAST SUPPORTER'}</div>
+          <a href="${belowAd.target_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block;" onclick="window.appState.trackAdEvent('player_below_ad', true)">
+            <img src="${belowAd.image_url}" alt="Promoted" style="width: 100%; max-height: 80px; object-fit: cover; border-radius: 6px;">
+          </a>
+        `;
+        belowContainer.style.display = 'block';
+      } else {
+        belowContainer.style.display = 'none';
+      }
+    }
+
+    // 4. Sidebar Ad in Player
+    const sidebarAd = this.ads.find(a => a.slot_name === 'sidebar_ad' && a.is_enabled);
+    const sidebarContainer = document.getElementById('playerSidebarAdContainer');
+    if (sidebarContainer) {
+      if (sidebarAd) {
+        sidebarContainer.innerHTML = `
+          <div class="ad-slot-label" style="margin-top: 10px;">${sidebarAd.badge_text || 'AFFILIATE RECOMMENDATION'}</div>
+          <a href="${sidebarAd.target_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block;" onclick="window.appState.trackAdEvent('sidebar_ad', true)">
+            <img src="${sidebarAd.image_url}" alt="Sponsored" style="width: 100%; border-radius: 6px;">
+          </a>
+        `;
+        sidebarContainer.style.display = 'block';
+      } else {
+        sidebarContainer.style.display = 'none';
+      }
+    }
+  }
+
+  trackAdEvent(slotName, isClick = false) {
+    fetch('/api/user/ads/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot_name: slotName, is_click: isClick })
+    }).catch(() => {});
   }
 
   switchTab(tabName, updateHash = true) {
@@ -209,12 +275,10 @@ class BharatStreamApp {
       window.location.hash = tabName;
     }
 
-    // Update Tab Buttons UI
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    // Reset search
     const searchInput = document.getElementById('globalSearchInput');
     if (searchInput) searchInput.value = '';
 
@@ -291,7 +355,7 @@ class BharatStreamApp {
             </iframe>
           </div>
           <div class="hero-info-box">
-            <div class="hero-tag">★ FEATURED BROADCASTER</div>
+            <div class="hero-tag">★ FEATURED LIVE BROADCASTER</div>
             <h1 class="hero-title">${heroChannel.channel_name}</h1>
             <p class="hero-desc">${heroChannel.description || 'Watch live verified broadcasting and breaking developments.'}</p>
             <div class="meta-badges">
@@ -301,7 +365,7 @@ class BharatStreamApp {
             </div>
             <div style="display: flex; gap: 12px; margin-top: 8px;">
               <button class="btn-primary" onclick="window.playerManager.playChannel(window.appState.getChannelById(${heroChannel.id}))">
-                ▶ Watch Fullscreen
+                ▶ Watch Live Stream
               </button>
               <button class="btn-outline" onclick="window.appState.toggleFavourite(${heroChannel.id})">
                 ${this.isFavourite(heroChannel.id) ? '❤️ In Favourites' : '🤍 Add to Favourites'}
@@ -322,7 +386,7 @@ class BharatStreamApp {
         <button class="btn-outline" onclick="window.appState.switchTab('trending')">View All Trending →</button>
       </div>
       <div class="channel-grid">
-        ${popular.map(c => this.createChannelCardHTML(c)).join('')}
+        ${this.renderGridWithNativeAd(popular)}
       </div>
 
       <!-- Popular Indian News Channels -->
@@ -378,6 +442,43 @@ class BharatStreamApp {
     `;
   }
 
+  renderGridWithNativeAd(channelList) {
+    let html = '';
+    const sponsoredAd = this.ads.find(a => a.slot_name === 'sponsored_channel_card' && a.is_enabled);
+
+    channelList.forEach((c, idx) => {
+      html += this.createChannelCardHTML(c);
+      // Inject native sponsored card after 3rd item
+      if (idx === 2 && sponsoredAd) {
+        html += `
+          <div class="channel-card" style="border: 1px solid #3b82f6; background: rgba(30, 58, 138, 0.2);" onclick="window.appState.trackAdEvent('sponsored_channel_card', true); window.open('${sponsoredAd.target_url}', '_blank');">
+            <div class="card-top">
+              <span class="live-badge" style="background: #1e3a8a; color: #93c5fd; border-color: #3b82f6;">
+                ★ SPONSORED
+              </span>
+              <span style="font-size: 0.75rem; color: #93c5fd;">Ad</span>
+            </div>
+            <div class="logo-frame">
+              <img class="channel-logo-img" src="${sponsoredAd.image_url}" alt="Promoted">
+            </div>
+            <div class="card-body">
+              <div class="channel-name" style="color: #60a5fa;">${sponsoredAd.headline}</div>
+              <div class="meta-badges">
+                <span class="meta-pill" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd;">Promoted Deal</span>
+              </div>
+            </div>
+            <div class="card-footer">
+              <span class="status-indicator" style="color: #60a5fa;">Visit Partner ↗</span>
+              <button class="btn-play-mini" style="background: #2563eb;">↗</button>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    return html;
+  }
+
   renderIndiaView(container) {
     const channels = this.allChannels.filter(c => c.country === 'India' && ['National', 'Business', 'Parliament'].includes(c.category));
     container.innerHTML = `
@@ -388,7 +489,7 @@ class BharatStreamApp {
         </div>
       </div>
       <div class="channel-grid">
-        ${channels.map(c => this.createChannelCardHTML(c)).join('')}
+        ${this.renderGridWithNativeAd(channels)}
       </div>
     `;
   }
@@ -420,7 +521,6 @@ class BharatStreamApp {
         </div>
       </div>
 
-      <!-- Language Switcher Bar -->
       <div class="language-pills-wrap" style="margin-bottom: 24px;">
         ${languages.map(l => `
           <button class="pill-btn ${l.name === currentLang ? 'active' : ''}" onclick="window.appState.openRegionalLanguage('${l.name}')">
@@ -435,7 +535,7 @@ class BharatStreamApp {
 
       <div class="channel-grid">
         ${channels.length > 0 
-          ? channels.map(c => this.createChannelCardHTML(c)).join('') 
+          ? this.renderGridWithNativeAd(channels)
           : '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted);">No channels listed for this language yet.</div>'
         }
       </div>
@@ -457,13 +557,12 @@ class BharatStreamApp {
         </div>
       </div>
       <div class="channel-grid">
-        ${channels.map(c => this.createChannelCardHTML(c)).join('')}
+        ${this.renderGridWithNativeAd(channels)}
       </div>
     `;
   }
 
   renderTrendingView(container) {
-    // Sort channels by view_count descending
     const sorted = [...this.allChannels].sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
     container.innerHTML = `
       <div class="section-header">
@@ -473,7 +572,7 @@ class BharatStreamApp {
         </div>
       </div>
       <div class="channel-grid">
-        ${sorted.slice(0, 12).map(c => this.createChannelCardHTML(c)).join('')}
+        ${this.renderGridWithNativeAd(sorted.slice(0, 12))}
       </div>
 
       <div class="section-header" style="margin-top: 36px;">
@@ -510,7 +609,7 @@ class BharatStreamApp {
       </div>
 
       <div class="channel-grid">
-        ${filtered.map(c => this.createChannelCardHTML(c)).join('')}
+        ${this.renderGridWithNativeAd(filtered)}
       </div>
     `;
   }
@@ -580,7 +679,7 @@ class BharatStreamApp {
           <span class="status-indicator" title="Stream verified officially">
             ● Available
           </span>
-          <button class="btn-play-mini" title="Play Stream">▶</button>
+          <button class="btn-play-mini" title="Play Live Stream">▶</button>
         </div>
       </div>
     `;
@@ -627,7 +726,7 @@ class BharatStreamApp {
       </div>
       <div class="channel-grid">
         ${matches.length > 0 
-          ? matches.map(c => this.createChannelCardHTML(c)).join('')
+          ? this.renderGridWithNativeAd(matches)
           : '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted);">No channels matched your search query. Try another keyword.</div>'
         }
       </div>
@@ -642,10 +741,8 @@ class BharatStreamApp {
       this.favourites.add(channelId);
     }
 
-    // Save to localStorage
     localStorage.setItem('bharatstream_fav_ids', JSON.stringify([...this.favourites]));
 
-    // Sync with backend API
     fetch('/api/user/favourites/toggle', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -655,7 +752,6 @@ class BharatStreamApp {
       })
     }).catch(e => console.error('Sync favourite error:', e));
 
-    // Re-render UI elements
     this.renderActiveView();
     if (window.playerManager) {
       window.playerManager.updateFavButtonState();
@@ -709,7 +805,6 @@ class BharatStreamApp {
   }
 }
 
-// Instantiate App
 window.addEventListener('DOMContentLoaded', () => {
   window.appState = new BharatStreamApp();
 });

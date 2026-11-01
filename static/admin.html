@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BharatStream Administration Portal</title>
+  <title>BharatStream - Admin & Monetization Dashboard</title>
   <link rel="icon" href="/static/img/default-tv.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,29 +12,32 @@
   <style>
     .admin-stats-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
       margin-bottom: 24px;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1024px) {
+      .admin-stats-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
       .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .stat-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
-      padding: 16px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
     }
     .stat-val {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       font-weight: 800;
       color: #fff;
       margin-top: 4px;
     }
     .stat-label {
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -111,6 +114,10 @@
     .form-input:focus {
       border-color: var(--primary-accent);
     }
+    .revenue-card {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+      border: 1px solid #059669;
+    }
   </style>
 </head>
 <body>
@@ -119,8 +126,8 @@
   <header class="navbar">
     <div class="navbar-container">
       <div class="brand-logo" onclick="window.location.href='/'">
-        <span class="logo-badge">ADMIN</span>
-        <span class="brand-text">Bharat<span>Stream</span> Management</span>
+        <span class="logo-badge">JSON-STORAGE</span>
+        <span class="brand-text">Bharat<span>Stream</span> Monetization & Admin</span>
       </div>
 
       <div class="nav-actions">
@@ -131,44 +138,66 @@
 
   <main class="app-container" style="padding-top: 24px;">
     
-    <!-- Stats Overview -->
+    <!-- Stats & Earnings Overview -->
     <div class="admin-stats-grid">
       <div class="stat-card">
         <span class="stat-label">Total Channels</span>
         <span id="statTotalChannels" class="stat-val">--</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Active Broadcasts</span>
+        <span class="stat-label">Active Streams</span>
         <span id="statActiveChannels" class="stat-val" style="color: #60a5fa;">--</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Verified Healthy</span>
-        <span id="statHealthyStreams" class="stat-val" style="color: #10b981;">--</span>
+        <span class="stat-label">Ad Impressions</span>
+        <span id="statAdImpressions" class="stat-val" style="color: #38bdf8;">--</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Degraded / Fallback</span>
-        <span id="statDegradedStreams" class="stat-val" style="color: #f59e0b;">--</span>
+        <span class="stat-label">Ad Clicks</span>
+        <span id="statAdClicks" class="stat-val" style="color: #fbbf24;">--</span>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">Open Viewer Reports</span>
-        <span id="statOpenReports" class="stat-val" style="color: #ef4444;">--</span>
+      <div class="stat-card revenue-card">
+        <span class="stat-label" style="color: #a7f3d0;">Estimated Earnings (USD)</span>
+        <span id="statEarningsUSD" class="stat-val" style="color: #34d399;">$0.00</span>
+      </div>
+      <div class="stat-card revenue-card">
+        <span class="stat-label" style="color: #a7f3d0;">Estimated Earnings (INR)</span>
+        <span id="statEarningsINR" class="stat-val" style="color: #34d399;">₹0.00</span>
       </div>
     </div>
 
     <!-- Admin Section Tabs -->
     <div class="admin-subnav">
-      <button class="admin-nav-btn active" data-section="sectionChannels">📺 Channels Directory</button>
+      <button class="admin-nav-btn active" data-section="sectionAds">💰 Monetization & Various Ad Displays</button>
+      <button class="admin-nav-btn" data-section="sectionChannels">📺 Channels Directory (JSON)</button>
       <button class="admin-nav-btn" data-section="sectionVerifier">🛡️ Automated Stream Verifier</button>
       <button class="admin-nav-btn" data-section="sectionReports">🚩 Viewer Reports</button>
-      <button class="admin-nav-btn" data-section="sectionAds">💰 Monetization & Ads</button>
     </div>
 
-    <!-- 1. Channels Directory Section -->
-    <section id="sectionChannels" class="admin-section">
+    <!-- 1. Monetization & Ads Section -->
+    <section id="sectionAds" class="admin-section">
       <div class="section-header">
         <div>
-          <h2 class="section-title">News Broadcasters Directory</h2>
-          <div class="section-subtitle">Manage authorized stream configurations and live statuses</div>
+          <h2 class="section-title">Earning & Advertisement Control Center</h2>
+          <div class="section-subtitle">Manage multiple ad display formats: Google AdSense, Leaderboard Banners, Sticky Footer, Native In-Feed, Below-Player, and Sidebar Units</div>
+        </div>
+      </div>
+
+      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 20px; font-size: 0.88rem; color: #a7f3d0;">
+        💡 <strong>Monetization Engine Active</strong>: Choose between <strong>Custom Image Banners</strong> (for direct brand sponsorship / affiliate marketing) and <strong>Google AdSense</strong>. When viewers browse channels and watch streams, impressions and clicks are tracked in real-time in <code>data/ads.json</code>!
+      </div>
+
+      <div id="adsManagementContainer">
+        <!-- Injected by admin.js -->
+      </div>
+    </section>
+
+    <!-- 2. Channels Directory Section -->
+    <section id="sectionChannels" class="admin-section" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">News Broadcasters Directory (data/channels.json)</h2>
+          <div class="section-subtitle">Manage authorized YouTube live stream IDs and broadcaster embeds</div>
         </div>
         <div style="display: flex; gap: 10px;">
           <input type="text" id="adminChannelSearch" class="search-input" placeholder="Search channels..." style="width: 260px;">
@@ -198,12 +227,12 @@
       </div>
     </section>
 
-    <!-- 2. Stream Health Verifier Section -->
+    <!-- 3. Stream Health Verifier Section -->
     <section id="sectionVerifier" class="admin-section" style="display: none;">
       <div class="section-header">
         <div>
           <h2 class="section-title">Automated Stream Health Verifier</h2>
-          <div class="section-subtitle">Scheduled & on-demand service checking stream reachability & embedding authorization</div>
+          <div class="section-subtitle">Audits broadcaster reachability & embedding authorization in <code>data/health_logs.json</code></div>
         </div>
         <div>
           <button id="btnRunVerification" class="btn-primary" style="background: #10b981;">
@@ -233,12 +262,12 @@
       </div>
     </section>
 
-    <!-- 3. Viewer Reports Section -->
+    <!-- 4. Viewer Reports Section -->
     <section id="sectionReports" class="admin-section" style="display: none;">
       <div class="section-header">
         <div>
           <h2 class="section-title">Viewer Stream Reports</h2>
-          <div class="section-subtitle">Real-time reports submitted by users experiencing stream or playback issues</div>
+          <div class="section-subtitle">Real-time reports stored in <code>data/reports.json</code></div>
         </div>
       </div>
 
@@ -258,20 +287,6 @@
             <!-- Injected by admin.js -->
           </tbody>
         </table>
-      </div>
-    </section>
-
-    <!-- 4. Monetization & Ads Section -->
-    <section id="sectionAds" class="admin-section" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Monetization & Ad Placements</h2>
-          <div class="section-subtitle">Configure compliant display ads, responsive banners, and sponsor placements</div>
-        </div>
-      </div>
-
-      <div id="adsManagementContainer">
-        <!-- Injected by admin.js -->
       </div>
     </section>
 
@@ -356,6 +371,11 @@
         </div>
 
         <div class="form-group">
+          <label>YouTube Channel ID (Permanent live stream)</label>
+          <input type="text" id="fChannelId" class="form-input" placeholder="e.g. UC5W_mHqS835s5_L51_5h8fA">
+        </div>
+
+        <div class="form-group">
           <label>Authorized Embed URL (or HLS .m3u8 URL)</label>
           <input type="url" id="fEmbedUrl" class="form-input" placeholder="https://...">
         </div>
@@ -389,7 +409,7 @@
 
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
           <button type="button" class="btn-outline" onclick="window.adminApp.closeModal()">Cancel</button>
-          <button type="submit" class="btn-primary">Save Channel</button>
+          <button type="submit" class="btn-primary">Save Channel to JSON</button>
         </div>
       </form>
     </div>

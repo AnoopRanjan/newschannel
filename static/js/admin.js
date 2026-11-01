@@ -1,6 +1,5 @@
 /**
- * BharatStream - Admin Portal Controller
- * Full CRUD, Stream Verifier Trigger, Health Logs Audit, Reports Management, and Ad Switches.
+ * BharatStream - Admin & Monetization Dashboard Controller (Pure JSON Storage)
  */
 
 class BharatStreamAdmin {
@@ -21,7 +20,6 @@ class BharatStreamAdmin {
   }
 
   bindEvents() {
-    // Navigation Tabs in Admin
     document.querySelectorAll('.admin-nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
@@ -33,19 +31,16 @@ class BharatStreamAdmin {
       });
     });
 
-    // Add Channel Form Submit
     const channelForm = document.getElementById('channelModalForm');
     if (channelForm) {
       channelForm.addEventListener('submit', (e) => this.handleSaveChannel(e));
     }
 
-    // Trigger Verification Button
     const verifyBtn = document.getElementById('btnRunVerification');
     if (verifyBtn) {
       verifyBtn.addEventListener('click', () => this.runStreamVerification());
     }
 
-    // Channel Search in Admin
     const searchInput = document.getElementById('adminChannelSearch');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => this.filterChannelsTable(e.target.value.toLowerCase()));
@@ -69,9 +64,10 @@ class BharatStreamAdmin {
         const stats = await res.json();
         document.getElementById('statTotalChannels').textContent = stats.total_channels;
         document.getElementById('statActiveChannels').textContent = stats.active_channels;
-        document.getElementById('statHealthyStreams').textContent = stats.healthy_streams;
-        document.getElementById('statDegradedStreams').textContent = stats.degraded_streams;
-        document.getElementById('statOpenReports').textContent = stats.open_reports;
+        document.getElementById('statAdImpressions').textContent = stats.total_ad_impressions?.toLocaleString() || '0';
+        document.getElementById('statAdClicks').textContent = stats.total_ad_clicks?.toLocaleString() || '0';
+        document.getElementById('statEarningsUSD').textContent = `$${stats.estimated_earnings_usd?.toFixed(2) || '0.00'}`;
+        document.getElementById('statEarningsINR').textContent = `₹${stats.estimated_earnings_inr?.toFixed(2) || '0.00'}`;
       }
     } catch (e) {
       console.error('Error fetching stats:', e);
@@ -180,7 +176,7 @@ class BharatStreamAdmin {
     if (!tbody) return;
 
     if (!logs.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 20px;">No audit logs recorded yet. Click "Run Stream Verification" to audit streams.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 20px;">No audit logs recorded yet in data/health_logs.json.</td></tr>';
       return;
     }
 
@@ -205,7 +201,7 @@ class BharatStreamAdmin {
     if (!tbody) return;
 
     if (!reports.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #10b981; padding: 24px;">✓ All viewer reports are currently resolved!</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #10b981; padding: 24px;">✓ All viewer reports in data/reports.json are resolved!</td></tr>';
       return;
     }
 
@@ -230,36 +226,45 @@ class BharatStreamAdmin {
     if (!container) return;
 
     container.innerHTML = ads.map(a => `
-      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-bottom: 16px;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-bottom: 18px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div>
-            <h4 style="font-size: 1rem; font-weight: 700; color: #fff;">${a.title} (<code>${a.slot_name}</code>)</h4>
-            <span style="font-size: 0.78rem; color: var(--text-dim);">Slot Type: ${a.ad_type}</span>
+            <h4 style="font-size: 1.05rem; font-weight: 700; color: #fff;">${a.title}</h4>
+            <span style="font-size: 0.78rem; color: var(--text-dim);">Slot: <code>${a.slot_name}</code> • Impressions: <strong>${a.impressions || 0}</strong> • Clicks: <strong>${a.clicks || 0}</strong> • Est. CPM: <strong>$${a.estimated_cpm || 2.0}</strong></span>
           </div>
           <div>
             <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
               <input type="checkbox" ${a.is_enabled ? 'checked' : ''} onchange="window.adminApp.toggleAdSlot('${a.slot_name}', this.checked)">
-              <span style="font-size: 0.85rem; color: ${a.is_enabled ? '#10b981' : '#ef4444'};">
+              <span style="font-size: 0.88rem; font-weight: 600; color: ${a.is_enabled ? '#10b981' : '#ef4444'};">
                 ${a.is_enabled ? 'Active / Serving' : 'Disabled'}
               </span>
             </label>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; font-size: 0.85rem; margin-bottom: 12px;">
           <div>
-            <label style="color: var(--text-dim); display: block; margin-bottom: 4px;">Headline / Text</label>
+            <label style="color: var(--text-dim); display: block; margin-bottom: 4px;">Ad Headline / Text</label>
             <input type="text" value="${a.headline || ''}" id="adHeadline_${a.slot_name}" class="search-input" style="border-radius: 6px; padding: 6px 12px;">
           </div>
           <div>
-            <label style="color: var(--text-dim); display: block; margin-bottom: 4px;">Target Redirect URL</label>
+            <label style="color: var(--text-dim); display: block; margin-bottom: 4px;">Target / Affiliate URL</label>
             <input type="text" value="${a.target_url || ''}" id="adTarget_${a.slot_name}" class="search-input" style="border-radius: 6px; padding: 6px 12px;">
+          </div>
+          <div>
+            <label style="color: var(--text-dim); display: block; margin-bottom: 4px;">Banner Image URL</label>
+            <input type="text" value="${a.image_url || ''}" id="adImage_${a.slot_name}" class="search-input" style="border-radius: 6px; padding: 6px 12px;">
           </div>
         </div>
 
-        <div style="margin-top: 12px; text-align: right;">
-          <button class="btn-primary" style="padding: 4px 14px; font-size: 0.8rem;" onclick="window.adminApp.saveAdSlot('${a.slot_name}')">
-            Save Slot Settings
+        <div style="margin-bottom: 12px;">
+          <label style="color: var(--text-dim); display: block; margin-bottom: 4px; font-size: 0.82rem;">Custom HTML / Google AdSense Ad Unit Code (Optional)</label>
+          <textarea id="adHtml_${a.slot_name}" class="form-input" rows="2" placeholder="<ins class='adsbygoogle' ...></ins>">${a.html_code || ''}</textarea>
+        </div>
+
+        <div style="text-align: right;">
+          <button class="btn-primary" style="padding: 6px 16px; font-size: 0.82rem;" onclick="window.adminApp.saveAdSlot('${a.slot_name}')">
+            Save Slot Settings to JSON
           </button>
         </div>
       </div>
@@ -274,14 +279,17 @@ class BharatStreamAdmin {
         body: JSON.stringify({ is_enabled: isEnabled })
       });
       this.fetchAds();
+      this.fetchStats();
     } catch (e) {
-      alert('Error saving ad status');
+      alert('Error updating ad status');
     }
   }
 
   async saveAdSlot(slotName) {
     const headline = document.getElementById(`adHeadline_${slotName}`).value;
     const targetUrl = document.getElementById(`adTarget_${slotName}`).value;
+    const imageUrl = document.getElementById(`adImage_${slotName}`).value;
+    const htmlCode = document.getElementById(`adHtml_${slotName}`).value;
 
     try {
       const res = await fetch(`/api/admin/ads/${slotName}`, {
@@ -289,12 +297,15 @@ class BharatStreamAdmin {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           headline: headline,
-          target_url: targetUrl
+          target_url: targetUrl,
+          image_url: imageUrl,
+          html_code: htmlCode
         })
       });
       if (res.ok) {
-        alert(`Ad slot "${slotName}" updated successfully.`);
+        alert(`Monetization slot "${slotName}" saved successfully.`);
         this.fetchAds();
+        this.fetchStats();
       }
     } catch (e) {
       alert('Failed to save ad slot: ' + e);
@@ -306,7 +317,7 @@ class BharatStreamAdmin {
     const statusBox = document.getElementById('verifierProgressStatus');
     if (btn) btn.disabled = true;
     if (statusBox) {
-      statusBox.innerHTML = '<span style="color: #60a5fa;">⏳ Verifying all 51+ authorized streams via official broadcaster endpoints...</span>';
+      statusBox.innerHTML = '<span style="color: #60a5fa;">⏳ Verifying all streams via YouTube oEmbed & broadcaster endpoints...</span>';
       statusBox.style.display = 'block';
     }
 
@@ -316,7 +327,7 @@ class BharatStreamAdmin {
       if (statusBox) {
         statusBox.innerHTML = `
           <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; color: #10b981;">
-            ✓ Completed automated verification of <strong>${data.verified_count}</strong> channels! Audit logs updated.
+            ✓ Completed verification of <strong>${data.verified_count}</strong> channels! Audit saved in <code>data/health_logs.json</code>.
           </div>
         `;
       }
@@ -340,7 +351,7 @@ class BharatStreamAdmin {
   }
 
   openAddModal() {
-    document.getElementById('modalFormTitle').textContent = 'Add New News Channel';
+    document.getElementById('modalFormTitle').textContent = 'Add New News Channel (to JSON)';
     document.getElementById('editChannelId').value = '';
     document.getElementById('fChannelName').value = '';
     document.getElementById('fSlug').value = '';
@@ -349,6 +360,7 @@ class BharatStreamAdmin {
     document.getElementById('fCategory').value = 'National';
     document.getElementById('fStreamType').value = 'youtube_live';
     document.getElementById('fVideoId').value = '';
+    document.getElementById('fChannelId').value = '';
     document.getElementById('fEmbedUrl').value = '';
     document.getElementById('fLogoUrl').value = '';
     document.getElementById('fWebsite').value = '';
@@ -372,6 +384,7 @@ class BharatStreamAdmin {
     document.getElementById('fCategory').value = ch.category;
     document.getElementById('fStreamType').value = ch.stream_type;
     document.getElementById('fVideoId').value = ch.video_id || '';
+    document.getElementById('fChannelId').value = ch.youtube_channel_id || '';
     document.getElementById('fEmbedUrl').value = ch.authorized_embed_url || '';
     document.getElementById('fLogoUrl').value = ch.logo_url || '';
     document.getElementById('fWebsite').value = ch.official_website || '';
@@ -397,6 +410,7 @@ class BharatStreamAdmin {
       category: document.getElementById('fCategory').value,
       stream_type: document.getElementById('fStreamType').value,
       video_id: document.getElementById('fVideoId').value,
+      youtube_channel_id: document.getElementById('fChannelId').value,
       authorized_embed_url: document.getElementById('fEmbedUrl').value,
       logo_url: document.getElementById('fLogoUrl').value,
       official_website: document.getElementById('fWebsite').value,
@@ -408,14 +422,12 @@ class BharatStreamAdmin {
     try {
       let res;
       if (id) {
-        // Edit
         res = await fetch(`/api/admin/channels/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        // Create
         res = await fetch('/api/admin/channels', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -424,7 +436,7 @@ class BharatStreamAdmin {
       }
 
       if (res.ok) {
-        alert('Channel saved successfully.');
+        alert('Channel saved to JSON database.');
         this.closeModal();
         this.loadAllData();
       } else {
@@ -437,7 +449,7 @@ class BharatStreamAdmin {
   }
 
   async deleteChannel(id) {
-    if (!confirm(`Are you sure you want to permanently delete Channel #${id}?`)) return;
+    if (!confirm(`Are you sure you want to permanently delete Channel #${id} from JSON storage?`)) return;
 
     try {
       const res = await fetch(`/api/admin/channels/${id}`, { method: 'DELETE' });
@@ -454,7 +466,7 @@ class BharatStreamAdmin {
     try {
       const res = await fetch(`/api/admin/reports/${reportId}/resolve`, { method: 'POST' });
       if (res.ok) {
-        alert('Report marked as resolved.');
+        alert('Report marked as resolved in JSON.');
         this.fetchReports();
         this.fetchStats();
       }

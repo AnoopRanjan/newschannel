@@ -11,6 +11,7 @@ class ChannelBase(BaseModel):
     category: str = Field("National", max_length=60)
     official_website: Optional[str] = None
     official_youtube_channel: Optional[str] = None
+    youtube_channel_id: Optional[str] = None
     video_id: Optional[str] = None
     authorized_embed_url: Optional[str] = None
     stream_type: str = Field("youtube_live", max_length=40)
@@ -32,6 +33,7 @@ class ChannelUpdate(BaseModel):
     category: Optional[str] = None
     official_website: Optional[str] = None
     official_youtube_channel: Optional[str] = None
+    youtube_channel_id: Optional[str] = None
     video_id: Optional[str] = None
     authorized_embed_url: Optional[str] = None
     stream_type: Optional[str] = None
@@ -45,9 +47,9 @@ class ChannelUpdate(BaseModel):
 class ChannelResponse(ChannelBase):
     id: int
     view_count: int = 0
-    last_verified_at: Optional[datetime] = None
+    last_verified_at: Optional[str] = None
     verification_status: str = "healthy"
-    created_at: Optional[datetime] = None
+    created_at: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -73,23 +75,7 @@ class FavouriteResponse(BaseModel):
     id: int
     channel_id: int
     channel: Optional[ChannelResponse] = None
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# User Schemas
-class UserBase(BaseModel):
-    name: str
-    email: str
-    preferred_language: str = "All"
-
-class UserCreate(UserBase):
-    google_id: Optional[str] = None
-
-class UserResponse(UserBase):
-    id: int
-    created_at: datetime
+    created_at: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -99,7 +85,7 @@ class StreamHealthLogResponse(BaseModel):
     id: int
     channel_id: int
     channel_name: Optional[str] = None
-    checked_at: datetime
+    checked_at: Optional[str] = None
     status: str
     http_code: Optional[int] = None
     error_message: Optional[str] = None
@@ -119,7 +105,7 @@ class UserReportResponse(BaseModel):
     channel_name: Optional[str] = None
     issue_type: str
     comment: Optional[str] = None
-    reported_at: datetime
+    reported_at: Optional[str] = None
     is_resolved: bool
 
     class Config:
@@ -135,7 +121,7 @@ class NewsHeadline(BaseModel):
     category: Optional[str] = "General"
     image_url: Optional[str] = None
 
-# Ad Setting Schemas
+# Earning / Ad Setting Schemas
 class AdSettingResponse(BaseModel):
     id: int
     slot_name: str
@@ -143,9 +129,13 @@ class AdSettingResponse(BaseModel):
     is_enabled: bool
     ad_type: str
     headline: Optional[str] = None
+    badge_text: Optional[str] = "SPONSORED"
     target_url: Optional[str] = None
     image_url: Optional[str] = None
     html_code: Optional[str] = None
+    impressions: Optional[int] = 0
+    clicks: Optional[int] = 0
+    estimated_cpm: Optional[float] = 2.0
 
     class Config:
         from_attributes = True
@@ -154,9 +144,11 @@ class AdSettingUpdate(BaseModel):
     is_enabled: Optional[bool] = None
     ad_type: Optional[str] = None
     headline: Optional[str] = None
+    badge_text: Optional[str] = None
     target_url: Optional[str] = None
     image_url: Optional[str] = None
     html_code: Optional[str] = None
+    estimated_cpm: Optional[float] = None
 
 # Admin Stats
 class AdminStatsResponse(BaseModel):
@@ -166,4 +158,8 @@ class AdminStatsResponse(BaseModel):
     degraded_streams: int
     total_categories: int
     open_reports: int
-    last_verified_time: Optional[datetime] = None
+    last_verified_time: Optional[str] = None
+    total_ad_impressions: Optional[int] = 0
+    total_ad_clicks: Optional[int] = 0
+    estimated_earnings_usd: Optional[float] = 0.0
+    estimated_earnings_inr: Optional[float] = 0.0

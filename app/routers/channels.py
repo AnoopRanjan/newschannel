@@ -1,9 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from app.database import get_db
-from app.models import NewsChannel, NewsCategory
+from fastapi import APIRouter, HTTPException, Query
 from app.schemas import ChannelResponse, CategoryResponse
 from app import crud
 
@@ -19,12 +15,10 @@ def list_channels(
     is_popular: Optional[bool] = None,
     stream_type: Optional[str] = None,
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
-    db: Session = Depends(get_db)
+    limit: int = Query(100, ge=1, le=200)
 ):
-    """Retrieve list of news channels matching filters."""
+    """Retrieve list of news channels matching filters from JSON storage."""
     channels = crud.get_channels(
-        db=db,
         skip=skip,
         limit=limit,
         country=country,
@@ -39,69 +33,60 @@ def list_channels(
     return channels
 
 @router.get("/featured", response_model=List[ChannelResponse])
-def get_featured_channels(db: Session = Depends(get_db)):
+def get_featured_channels():
     """Retrieve featured live news channels."""
-    return crud.get_channels(db=db, is_featured=True, limit=12)
+    return crud.get_channels(is_featured=True, limit=12)
 
 @router.get("/popular", response_model=List[ChannelResponse])
-def get_popular_channels(db: Session = Depends(get_db)):
+def get_popular_channels():
     """Retrieve most-watched / popular news channels."""
-    return crud.get_channels(db=db, is_popular=True, limit=12)
+    return crud.get_channels(is_popular=True, limit=12)
 
 @router.get("/india", response_model=List[ChannelResponse])
-def get_india_national_channels(db: Session = Depends(get_db)):
+def get_india_national_channels():
     """Retrieve Indian national news channels."""
-    return db.query(NewsChannel).filter(
-        NewsChannel.country == "India",
-        NewsChannel.category.in_(["National", "Business", "Parliament"]),
-        NewsChannel.is_active == True
-    ).order_by(NewsChannel.id).all()
+    channels = crud.get_channels(country="India", limit=100)
+    return [c for c in channels if c.get("category") in ["National", "Business", "Parliament"]]
 
 @router.get("/international", response_model=List[ChannelResponse])
-def get_international_channels(db: Session = Depends(get_db)):
+def get_international_channels():
     """Retrieve verified international news channels broadcasting in English."""
-    return db.query(NewsChannel).filter(
-        NewsChannel.category == "International",
-        NewsChannel.language == "English",
-        NewsChannel.is_active == True
-    ).order_by(NewsChannel.id).all()
+    channels = crud.get_channels(category="International", limit=100)
+    return [c for c in channels if c.get("language") == "English"]
 
 @router.get("/regional/{language}", response_model=List[ChannelResponse])
-def get_regional_language_channels(language: str, db: Session = Depends(get_db)):
+def get_regional_language_channels(language: str):
     """Retrieve Indian regional channels for a specific language."""
-    return db.query(NewsChannel).filter(
-        func.lower(NewsChannel.language) == language.lower(),
-        NewsChannel.country == "India",
-        NewsChannel.is_active == True
-    ).all()
+    channels = crud.get_channels(country="India", language=language, limit=100)
+    return channels
 
 @router.get("/languages/summary")
-def get_language_summary(db: Session = Depends(get_db)):
+def get_language_summary():
     """Returns languages with their channel count for regional navigation."""
-    results = db.query(
-        NewsChannel.language,
-        func.count(NewsChannel.id).label("channel_count")
-    ).filter(NewsChannel.is_active == True, NewsChannel.country == "India")\
-     .group_by(NewsChannel.language)\
-     .order_by(func.count(NewsChannel.id).desc()).all()
+    channels = crud.get_channels(country="India", limit=200)
+    counts = {}
+    for c in channels:
+        lang = c.get("language", "Unknown")
+        counts[lang] = counts.get(lang, 0) + 1
     
-    return [{"language": r[0], "count": r[1]} for r in results]
+    sorted_langs = sorted(counts.items(), key=lambda x: -x[1])
+    return [{"language": lang, "count": count} for lang, count in sorted_langs]
 
 @router.get("/categories", response_model=List[CategoryResponse])
-def list_categories(db: Session = Depends(get_db)):
+def list_categories():
     """Retrieve all news categories."""
-    return crud.get_categories(db)
+    return crud.get_categories()
 
 @router.get("/{identifier}", response_model=ChannelResponse)
-def get_channel(identifier: str, db: Session = Depends(get_db)):
+def get_channel(identifier: str):
     """Get single channel by numeric ID or slug, and record view count."""
     if identifier.isdigit():
-        channel = crud.get_channel_by_id(db, int(identifier))
+        channel = crud.get_channel_by_id(int(identifier))
     else:
-        channel = crud.get_channel_by_slug(db, identifier)
+        channel = crud.get_channel_by_slug(identifier)
     
     if not channel:
         raise HTTPException(status_code=404, detail="News channel not found")
     
-    crud.increment_channel_view(db, channel.id)
+    crud.increment_channel_view(channel["id"])
     return channel
